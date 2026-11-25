@@ -1411,5 +1411,117 @@
     refreshAdminDashboard();
   })();
   </script>
+
+<!-- === BLOCK: GOOGLE_DRIVE_AUTO_IMAGE_CONVERTER [START] === -->
+<script>
+(function () {
+  // 1. Google Drive ke kisi bhi link se File ID nikal kar direct image URL banata hai
+  function convertGoogleDriveUrl(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== "string") return rawUrl;
+    var url = rawUrl.trim();
+
+    // Agar link Google Drive ya Google Docs ka nahi hai, toh jaisa hai waisa chhod do
+    if (url.indexOf("drive.google.com") === -1 && url.indexOf("docs.google.com") === -1) {
+      return url;
+    }
+
+    // /file/d/FILE_ID/view ya ?id=FILE_ID se 20+ character ki ID pakadna
+    var match = url.match(/\/d\/([a-zA-Z0-9_-]{20,})/) || url.match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
+    if (match && match[1]) {
+      return "https://lh3.googleusercontent.com/d/" + match[1] + "=w1200";
+    }
+    return url;
+  }
+
+  // Global helper (agar baaki code mein kahin call karna ho)
+  window.convertGoogleDriveUrl = convertGoogleDriveUrl;
+
+  // 2. Banner / Ad ke sabhi Image URL input boxes ko automatically watch karna
+  function attachAutoDriveConvert(inputEl) {
+    if (!inputEl || inputEl.dataset.driveAutoBound === "1") return;
+    inputEl.dataset.driveAutoBound = "1";
+
+    function handleUrlChange() {
+      var oldVal = inputEl.value;
+      var newVal = convertGoogleDriveUrl(oldVal);
+      if (newVal && newVal !== oldVal) {
+        inputEl.value = newVal;
+        // Admin panel ke live preview aur save logic ko trigger karne ke liye
+        inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+        inputEl.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }
+
+    inputEl.addEventListener("paste", function () {
+      setTimeout(handleUrlChange, 10);
+    });
+    inputEl.addEventListener("change", handleUrlChange);
+    inputEl.addEventListener("blur", handleUrlChange);
+  }
+
+  // 3. Page par maujood sabhi Image / Banner URL inputs par lagana
+  function initDriveUrlInputs() {
+    var selectors = [
+      'input[type="url"]',
+      'input[id*="Img" i]',
+      'input[id*="Image" i]',
+      'input[id*="Banner" i]',
+      'input[id*="Ad" i]',
+      'input[placeholder*="http" i]',
+      'input[placeholder*="image" i]',
+      'input[placeholder*="url" i]'
+    ];
+    document.querySelectorAll(selectors.join(",")).forEach(attachAutoDriveConvert);
+  }
+
+  // 4. Purane localStorage mein saved banners/ads ko bhi automatic upgrade karna
+  function upgradeStoredAdUrls() {
+    var keys = [
+      "powerPlumBanners",
+      "powerPlumSquareAds",
+      "powerPlumPopupAds",
+      "powerPlumBannerUrl",
+      "powerPlumSquareAdUrl",
+      "powerPlumPopupAdUrl"
+    ];
+    keys.forEach(function (k) {
+      var raw = localStorage.getItem(k);
+      if (!raw || raw.indexOf("drive.google.com") === -1) return;
+      try {
+        if (raw.trim().charAt(0) === "[" || raw.trim().charAt(0) === "{") {
+          var parsed = JSON.parse(raw);
+          var changed = false;
+          if (Array.isArray(parsed)) {
+            parsed.forEach(function (item) {
+              if (item && item.img) {
+                var c = convertGoogleDriveUrl(item.img);
+                if (c !== item.img) { item.img = c; changed = true; }
+              }
+              if (item && item.image) {
+                var c2 = convertGoogleDriveUrl(item.image);
+                if (c2 !== item.image) { item.image = c2; changed = true; }
+              }
+            });
+          }
+          if (changed) localStorage.setItem(k, JSON.stringify(parsed));
+        } else {
+          var single = convertGoogleDriveUrl(raw);
+          if (single !== raw) localStorage.setItem(k, single);
+        }
+      } catch (e) {}
+    });
+  }
+
+  upgradeStoredAdUrls();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initDriveUrlInputs);
+  } else {
+    initDriveUrlInputs();
+  }
+})();
+</script>
+<!-- === BLOCK: GOOGLE_DRIVE_AUTO_IMAGE_CONVERTER [END] === -->
+
+  
 </body>
 </html>
