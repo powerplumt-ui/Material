@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Power Plum Dealer QR Scanner & Technician Reward Ledger</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes pulseSoft {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+    .pulse-qr-cta { animation: pulseSoft 2.6s infinite ease-in-out; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen pb-16 selection:bg-amber-300 selection:text-slate-950">
+
+  <!-- Non-blocking Toast Banner -->
+  <div id="dealerToast" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[110] bg-slate-950 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-700 hidden max-w-[92vw] text-center"></div>
+
+  <!-- === [BLOCK START: DEALER_AUTH_SECURITY] === -->
+  <!-- Dealer Login / Store Setup & Optional PIN Lock Modal -->
+  <div id="dealerAuthModal" class="fixed inset-0 z-[95] bg-slate-950/85 backdrop-blur-xs flex items-center justify-center p-3 overflow-y-auto hidden">
+    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 p-4 sm:p-5 space-y-3 my-auto">
+      <div class="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
+        <div>
+          <span class="inline-block bg-blue-950 text-amber-300 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">Dealer Login & Store Setup</span>
+          <h2 class="text-base font-black text-slate-950 mt-1">Apni Store / Dealer Profile Set Karein</h2>
+          <p class="text-[11px] text-slate-500">Mobile number, Dealer naam aur Store/Shop naam se login/setup karein.</p>
+        </div>
+        <button id="closeDealerAuthModalBtn" type="button" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-2.5 py-1 rounded-xl cursor-pointer">✕</button>
+      </div>
+
+      <form id="dealerAuthForm" class="space-y-2.5 text-xs" autocomplete="off">
+        <div>
+          <label for="authDealerMobile" class="block text-[10px] font-extrabold text-slate-700 mb-1">Dealer Mobile Number (10-digit) *</label>
+          <input id="authDealerMobile" type="tel" required maxlength="15" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold focus:outline-2 focus:outline-blue-700" placeholder="e.g. 9811001122" />
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label for="authDealerName" class="block text-[10px] font-extrabold text-slate-700 mb-1">Dealer Name *</label>
+            <input id="authDealerName" type="text" required maxlength="80" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold focus:outline-2 focus:outline-blue-700" placeholder="Apna naam" />
+          </div>
+          <div>
+            <label for="authStoreName" class="block text-[10px] font-extrabold text-slate-700 mb-1">Store / Shop Name *</label>
+            <input id="authStoreName" type="text" required maxlength="100" class="w-full p-2.5 border border-slate-300 rounded-xl font-semibold focus:outline-2 focus:outline-blue-700" placeholder="e.g. Suleman Sanitary & Pipe" />
+          </div>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <label for="authPinInput" class="text-[10px] font-extrabold text-slate-800">Optional 4-Digit Store PIN (Data Privacy)</label>
+            <span class="text-[10px] text-slate-500">Blank = No PIN</span>
+          </div>
+          <input id="authPinInput" type="password" inputmode="numeric" maxlength="6" class="w-full p-2 border border-slate-300 rounded-xl bg-white font-mono text-xs" placeholder="Optional 4-6 digit PIN" />
+          <p class="text-[10px] text-slate-600 leading-relaxed">
+            <strong>Data Security Note:</strong> Aapka data is device ke browser storage mein save hota hai. High traffic (500/day × 365 days) ke liye weekly CSV/JSON backup zaroor lein aur Google Apps Script URL ko HTTPS par rakhein.
+          </p>
+        </div>
+        <button type="submit" class="w-full bg-blue-900 hover:bg-blue-950 text-white font-black text-xs sm:text-sm py-3 rounded-2xl shadow-md cursor-pointer">
+          Save & Login Dealer Account
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Optional PIN Unlock Screen -->
+  <div id="dealerPinLockScreen" class="fixed inset-0 z-[100] bg-slate-950/95 flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-xs rounded-3xl p-5 shadow-2xl space-y-3 text-center">
+      <span class="inline-block bg-amber-100 text-amber-900 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase">Store Locked</span>
+      <h2 class="text-base font-black text-slate-900">Enter Store PIN</h2>
+      <p id="pinLockStoreLabel" class="text-[11px] text-slate-500 font-semibold"></p>
+      <input id="unlockPinInput" type="password" inputmode="numeric" maxlength="6" class="w-full p-2.5 border border-slate-300 rounded-xl text-center font-mono text-sm font-bold" placeholder="Enter PIN" />
+      <p id="unlockPinError" class="text-[11px] text-red-600 font-bold hidden">Galat PIN! Dobara try karein.</p>
+      <button id="unlockPinBtn" type="button" class="w-full bg-blue-900 hover:bg-blue-950 text-white font-black text-xs py-2.5 rounded-xl cursor-pointer">Unlock Ledger</button>
+    </div>
+  </div>
+  <!-- === [BLOCK END: DEALER_AUTH_SECURITY] === -->
+
+  <!-- === [BLOCK START: DUPLICATE_GUARD] === -->
+  <!-- Duplicate Detection Warning & Explicit Override Modal -->
+  <div id="duplicateWarningModal" class="fixed inset-0 z-[105] bg-slate-950/80 flex items-center justify-center p-3 hidden">
+    <div class="bg-white w-full max-w-md rounded-3xl border-2 border-red-500 shadow-2xl p-4 sm:p-5 space-y-3 text-xs">
+      <div class="flex items-start justify-between gap-2 border-b border-red-100 pb-2">
+        <div>
+          <span class="inline-block bg-red-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase">Duplicate Entry Detected!</span>
+          <h3 class="text-base font-black text-red-950 mt-1">Ye QR ya Bill Pehle Hi Scan Ho Chuka Hai</h3>
+        </div>
+        <button id="closeDupModalBtn" type="button" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-xl cursor-pointer">✕</button>
+      </div>
+
+      <div id="dupExistingDetailsBox" class="bg-red-50 border border-red-200 rounded-2xl p-3 space-y-1 text-red-950"></div>
+
+      <div class="space-y-1.5">
+        <label for="dupOverrideReasonInput" class="block text-[10px] font-extrabold text-slate-700">
+          Agar alag bill/split invoice hai to Override Reason likhein (Optional override):
+        </label>
+        <input id="dupOverrideReasonInput" type="text" class="w-full p-2.5 border border-slate-300 rounded-xl" placeholder="e.g. Second part bill / extra material on same site" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <button id="blockDuplicateConfirmBtn" type="button" class="bg-red-600 hover:bg-red-700 text-white font-black py-2.5 rounded-xl cursor-pointer">
+          Block Duplicate
+        </button>
+        <button id="allowDuplicateOverrideBtn" type="button" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-2.5 rounded-xl cursor-pointer">
+          Force Save (Override)
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- === [BLOCK END: DUPLICATE_GUARD] === -->
+
+  <!-- Hamburger Drawer with Dedicated Views -->
+  <div id="drawerBackdrop" class="fixed inset-0 z-[80] bg-slate-950/60 hidden"></div>
+  <aside id="dealerDrawer" class="fixed top-0 left-0 bottom-0 z-[85] w-80 max-w-[90vw] bg-white shadow-2xl -translate-x-full transition-transform duration-200 flex flex-col">
+    <div class="p-3.5 bg-blue-950 text-white flex items-center justify-between gap-2">
+      <div>
+        <p class="text-sm font-black">Dealer Control Menu</p>
+        <p id="drawerDealerCaption" class="text-[10px] text-blue-200 truncate">Not Logged In</p>
+      </div>
+      <button id="closeDrawerBtn" type="button" class="bg-white/15 hover:bg-white/25 text-white font-bold text-xs px-2.5 py-1.5 rounded-xl cursor-pointer">✕</button>
+    </div>
+
+    <!-- Separate Dedicated Navigation Buttons -->
+    <div class="p-2.5 bg-slate-50 border-b border-slate-200 grid grid-cols-1 gap-1.5 text-xs">
+      <button id="navVisitTrackerBtn" type="button" class="w-full text-left px-3 py-2.5 rounded-xl font-black bg-blue-900 text-white flex items-center justify-between cursor-pointer">
+        <span>1. Technician Visit &amp; Yearly Tracker</span>
+        <span class="text-[10px] bg-white/15 px-2 py-0.5 rounded-lg">Visits</span>
+      </button>
+      <button id="navSheetsGuideBtn" type="button" class="w-full text-left px-3 py-2.5 rounded-xl font-bold bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 flex items-center justify-between cursor-pointer">
+        <span>2. Excel / Google Sheets Sync &amp; Code</span>
+        <span class="text-[10px] bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded-lg font-extrabold">Sheet</span>
+      </button>
+      <button id="navSecurityBackupBtn" type="button" class="w-full text-left px-3 py-2.5 rounded-xl font-bold bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 flex items-center justify-between cursor-pointer">
+        <span>3. Data Security &amp; Backup</span>
+        <span class="text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-lg font-extrabold">Backup</span>
+      </button>
+    </div>
+
+    <div class="p-3.5 overflow-y-auto flex-1 space-y-3 text-xs">
+
+      <!-- === [BLOCK START: TECH_VISIT_COUNTER] === -->
+      <div id="drawerPaneVisitTracker" class="space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <h3 class="text-sm font-black text-slate-900">Technician Visit Tracker</h3>
+            <p class="text-[10px] text-slate-500">Kaun sa technician kitne bar aaya, total bill &amp; points.</p>
+          </div>
+          <select id="visitPeriodFilter" class="p-1.5 border border-slate-300 rounded-xl bg-white text-[11px] font-bold">
+            <option value="ALL">Pure Saal (All Time)</option>
+            <option value="TODAY">Aaj (Today)</option>
+            <option value="MONTH">Is Mahine (Month)</option>
+          </select>
+        </div>
+        <div id="visitTrackerList" class="space-y-2"></div>
+        <p id="visitTrackerEmpty" class="text-center text-[11px] text-slate-400 py-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+          Abhi koi technician visit record nahi hai (0).
+        </p>
+      </div>
+      <!-- === [BLOCK END: TECH_VISIT_COUNTER] === -->
+
+      <!-- === [BLOCK START: SHEETS_EXCEL_SYNC_GUIDE] === -->
+      <div id="drawerPaneSheetsGuide" class="space-y-3 hidden">
+        <div>
+          <h3 class="text-sm font-black text-slate-900">Excel / Google Sheets Linking Guide</h3>
+          <p class="text-[10px] text-slate-500">500/day entries ko Excel ya Google Sheet mein kaise jodein.</p>
+        </div>
+
+        <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 space-y-1.5 text-[11px] text-emerald-950">
+          <p class="font-black">Kaise Link Karein (Step-by-Step):</p>
+          <p><strong>Step 1:</strong> Google Drive mein nayi Sheet banayein aur Row 1 mein headers rakhein: <code class="bg-white px-1 rounded">Date, QR_ID, Bill_No, Tech_Name, Mobile, Trade, Bill_Amt, Points, Note</code>.</p>
+          <p><strong>Step 2:</strong> Sheet mein <em>Extensions &gt; Apps Script</em> kholein, neeche diya script paste karein aur <strong>Deploy &gt; Web app</strong> (Access: Anyone) karein.</p>
+          <p><strong>Step 3:</strong> Excel ke liye <strong>Data Security &amp; Backup</strong> ya neeche CSV button se CSV download karke seedha Excel/Sheets mein open karein.</p>
+        </div>
+
+        <div class="space-y-1">
+          <label for="sheetsWebhookUrlInput" class="block text-[10px] font-extrabold text-slate-700">Google Apps Script Web App URL (Optional Auto-Push)</label>
+          <div class="flex gap-1.5">
+            <input id="sheetsWebhookUrlInput" type="url" class="flex-1 p-2 border border-slate-300 rounded-xl text-[11px]" placeholder="https://script.google.com/macros/s/.../exec" />
+            <button id="saveSheetsWebhookBtn" type="button" class="bg-blue-900 text-white font-bold px-2.5 rounded-xl text-[11px] cursor-pointer">Save</button>
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-extrabold uppercase text-slate-600">Google Apps Script Code (Paste in Apps Script)</span>
+            <button id="copyAppsScriptBtn" type="button" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[10px] px-2.5 py-1 rounded-lg cursor-pointer">Copy Code</button>
+          </div>
+          <pre id="appsScriptCode" class="bg-slate-950 text-emerald-300 p-2.5 rounded-xl text-[10px] overflow-x-auto leading-relaxed">function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var d = JSON.parse(e.postData.contents);
+  sheet.appendRow([
+    d.scannedAt || new Date().toISOString(),
+    d.qrId || "",
+    d.billNo || "",
+    d.techName || "",
+    d.techMobile || "",
+    d.trade || "",
+    Number(d.billAmount || 0),
+    Number(d.rewardPoints || 0),
+    d.note || ""
+  ]);
+  return ContentService.createTextOutput('{"ok":true}')
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 space-y-1 text-[10px] text-slate-700">
+          <p class="font-black text-slate-900">Kaunsa Block Kya Kaam Karta Hai:</p>
+          <p>• <strong>DEALER_AUTH_SECURITY</strong>: Dealer login, store name &amp; PIN lock.</p>
+          <p>• <strong>TODAY_DASHBOARD_500_SCALE</strong>: Aaj ke 500+ scan ka fast dashboard &amp; search.</p>
+          <p>• <strong>BIG_QR_SCANNER_CAMERA_GALLERY</strong>: Camera QR + Gallery/Screenshot QR decode.</p>
+          <p>• <strong>DUPLICATE_GUARD</strong>: Duplicate QR/Bill block &amp; override check.</p>
+          <p>• <strong>TECH_VISIT_COUNTER</strong>: Har technician ki visit count aur yearly hisab.</p>
+          <p>• <strong>SHEETS_EXCEL_SYNC_GUIDE</strong>: CSV export aur Google Sheet sync code.</p>
+        </div>
+      </div>
+      <!-- === [BLOCK END: SHEETS_EXCEL_SYNC_GUIDE] === -->
+
+      <!-- Dedicated View 3: Data Security & Backup -->
+      <div id="drawerPaneSecurityBackup" class="space-y-3 hidden">
+        <div>
+          <h3 class="text-sm font-black text-slate-900">Data Security &amp; Backup (500/Day Scale)</h3>
+          <p class="text-[10px] text-slate-500">Pure saal (~182,500 records) ka backup aur safety controls.</p>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-200 rounded-2xl p-3 space-y-1 text-[11px] text-blue-950">
+          <p class="font-black">Security &amp; Scale Guidelines:</p>
+          <p>1. Roz 500 entries ke hisab se saal mein lagbhag 1,82,500 rows hoti hain. Har hafte/mahine CSV ya JSON backup download karke drive mein rakhein.</p>
+          <p>2. Store PIN set karne se shop staff/others unauthorized reset nahi kar payenge.</p>
+          <p>3. Sabhi inputs ko sanitize karke store kiya jata hai; hamesha HTTPS links use karein.</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button id="drawerExportCsvBtn" type="button" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 px-2 rounded-xl text-[11px] cursor-pointer">
+            Export Excel CSV
+          </button>
+          <button id="drawerExportJsonBtn" type="button" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-2 rounded-xl text-[11px] cursor-pointer">
+            Backup JSON
+          </button>
+        </div>
+
+        <div class="bg-red-50 border border-red-200 rounded-2xl p-3 space-y-2">
+          <p class="text-[11px] font-black text-red-900">Danger Zone: Clear All Ledger Records</p>
+          <p class="text-[10px] text-red-800">Sabhi scan, bill aur reward entries ko 0/empty karne ke liye neeche <strong>RESET</strong> type karein.</p>
+          <input id="confirmResetInput" type="text" class="w-full p-2 border border-red-300 rounded-xl bg-white text-xs font-mono" placeholder="Type RESET to confirm" />
+          <button id="confirmClearAllBtn" type="button" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-2 rounded-xl text-xs cursor-pointer">
+            Permanently Clear All Entries
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- Compact Top Bar with Dealer/Store Badge, Today's Count & Today's Bill at a Glance -->
+  <header class="sticky top-0 z-40 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 text-white shadow-md border-b border-blue-900/50">
+    <div class="max-w-2xl mx-auto px-3 py-2 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2 min-w-0">
+        <button id="openDrawerBtn" type="button" aria-label="Open Menu" class="bg-white/15 hover:bg-white/25 text-white font-black text-sm px-2.5 py-1.5 rounded-xl cursor-pointer shrink-0">
+          ☰
+        </button>
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5">
+            <span id="headerStoreBadge" class="inline-block bg-amber-400 text-slate-950 text-[9px] font-black px-1.5 py-0.5 rounded uppercase shrink-0">STORE</span>
+            <h1 id="topStoreTitle" class="text-xs sm:text-sm font-black tracking-tight truncate">Power Plum Dealer QR</h1>
+          </div>
+          <p id="topDealerSubtitle" class="text-[10px] text-blue-200 truncate">Tap Login for Mobile &amp; Store</p>
+        </div>
+      </div>
+
+      <!-- Compact Today Count & Today Bill Glance -->
+      <div class="flex items-center gap-1.5 shrink-0">
+        <div class="bg-white/10 border border-white/15 rounded-xl px-2 py-1 text-right leading-tight">
+          <div class="text-[9px] text-blue-200 font-bold">Aaj Scans: <span id="headerTodayCount" class="text-white font-black">0</span></div>
+          <div id="headerTodayBill" class="text-[11px] font-black text-emerald-300">₹0</div>
+        </div>
+        <button id="openDealerAuthBtn" type="button" class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[10px] px-2.5 py-2 rounded-xl shadow cursor-pointer">
+          Login
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-2xl mx-auto p-3 space-y-3">
+
+    <!-- === [BLOCK START: BIG_QR_SCANNER_CAMERA_GALLERY] === -->
+    <!-- Clean Scan Screen + Focused Post-Scan Bill Entry Card -->
+    <section aria-label="QR Code Scanner & Bill Entry" class="bg-white rounded-3xl p-3.5 sm:p-4 border border-slate-200 shadow-sm space-y-3.5">
+
+      <!-- Prominent Big QR Scan Buttons -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <button id="bigCameraScanBtn" type="button" class="pulse-qr-cta w-full bg-gradient-to-r from-blue-800 to-blue-950 hover:from-blue-900 hover:to-slate-950 text-white font-black py-4 px-4 rounded-2xl shadow-lg flex flex-col items-center justify-center gap-0.5 cursor-pointer">
+          <span class="text-sm sm:text-base tracking-wide">📷 LIVE CAMERA QR SCAN</span>
+          <span class="text-[10px] font-semibold text-blue-200">PDF / Bill QR seedha scan karein</span>
+        </button>
+
+        <label for="galleryQrFileInput" class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black py-4 px-4 rounded-2xl shadow-lg flex flex-col items-center justify-center gap-0.5 cursor-pointer text-center">
+          <span class="text-sm sm:text-base tracking-wide">🖼️ GALLERY / SCREENSHOT QR</span>
+          <span class="text-[10px] font-extrabold text-slate-950/85">Gallery ya screenshot se QR chunein</span>
+          <input id="galleryQrFileInput" type="file" accept="image/*" class="hidden" />
+        </label>
+      </div>
+
+      <!-- Live Camera Viewport -->
+      <div id="cameraViewportBox" class="relative rounded-2xl overflow-hidden bg-slate-950 aspect-video border-2 border-blue-900 hidden">
+        <video id="liveQrVideo" class="w-full h-full object-cover" playsinline muted></video>
+        <canvas id="qrWorkCanvas" class="hidden"></canvas>
+        <div class="pointer-events-none absolute inset-10 border-2 border-amber-400 rounded-2xl shadow-[0_0_0_9999px_rgba(2,6,23,0.42)]"></div>
+        <button id="stopLiveCameraBtn" type="button" class="absolute top-2.5 right-2.5 bg-red-600 hover:bg-red-700 text-white font-black text-[11px] px-3 py-1.5 rounded-xl shadow cursor-pointer">
+          Stop Camera
+        </button>
+      </div>
+      <canvas id="qrWorkCanvasFallback" class="hidden"></canvas>
+
+      <!-- Subtle Scan Status & Optional Manual QR Trigger -->
+      <div class="flex items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2 text-[11px]">
+        <span id="qrDecodeFeedback" class="font-semibold text-slate-600 truncate">Ready: QR scan karein ya Bill Number &amp; Amount bharein.</span>
+        <span id="qrScannerStateBadge" class="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">Ready</span>
+      </div>
+
+      <!-- Focused Post-Scan Bill Number + Big Safe Amount Box + Big SAVE BILL Button -->
+      <form id="scanEntryForm" class="bg-slate-50/90 border-2 border-blue-950/15 rounded-3xl p-3.5 sm:p-4 space-y-3 text-xs">
+
+        <!-- Bill Number Row -->
+        <div>
+          <label for="entryBillNo" class="block text-[11px] font-black uppercase tracking-wide text-slate-700 mb-1">
+            Bill Number *
+          </label>
+          <input id="entryBillNo" type="text" required class="w-full px-3.5 py-2.5 border-2 border-slate-300 focus:border-blue-800 rounded-2xl bg-white text-sm font-black text-slate-950 tracking-wide" placeholder="e.g. BILL-1024 ya BOQ-..." />
+        </div>
+
+        <!-- Big Safe Amount Box Positioned Right Above Action Area / Keyboard -->
+        <div class="bg-white border-2 border-emerald-600 rounded-2xl p-3 space-y-2 shadow-xs">
+          <div class="flex items-center justify-between gap-2">
+            <label for="entryBillAmount" class="text-xs font-black uppercase tracking-wide text-emerald-950">
+              Bill Amount (₹) — Dhyan Se Bharein *
+            </label>
+            <button id="clearAmountBtn" type="button" class="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[11px] px-2.5 py-1 rounded-xl cursor-pointer">
+              Clear
+            </button>
+          </div>
+
+          <div class="relative flex items-center">
+            <span class="absolute left-3.5 text-xl font-black text-emerald-700 select-none">₹</span>
+            <input
+              id="entryBillAmount"
+              type="number"
+              inputmode="decimal"
+              min="0"
+              step="any"
+              required
+              class="w-full pl-9 pr-3 py-3 border-2 border-emerald-500 focus:border-emerald-700 rounded-2xl bg-emerald-50/35 text-2xl sm:text-3xl font-black text-slate-950 tabular-nums focus:outline-none"
+              placeholder="0"
+            />
+          </div>
+
+          <!-- Amount Safety Readout + Large Amount Confirmation -->
+          <div id="amountSafetyBar" class="flex flex-wrap items-center justify-between gap-2 bg-slate-100 rounded-xl px-3 py-2 text-[11px]">
+            <div>
+              <span class="text-slate-500 font-semibold">Readout: </span>
+              <span id="amountFormattedReadout" class="font-black text-slate-950 text-xs">₹0</span>
+            </div>
+            <span id="amountSafetyTag" class="font-extrabold text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900">
+              Safe Amount
+            </span>
+          </div>
+
+          <!-- Extra Safety Check Shown Automatically When Amount >= ₹50,000 -->
+          <div id="highAmountConfirmBox" class="bg-amber-50 border border-amber-400 rounded-xl p-2.5 text-[11px] text-amber-950 hidden">
+            <label class="flex items-center gap-2 font-extrabold cursor-pointer">
+              <input id="confirmHighAmountCheckbox" type="checkbox" class="w-4 h-4 accent-amber-600 rounded cursor-pointer" />
+              <span>Badi rakam (₹50,000+) hai — maine zero/amount check kar liya hai.</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Subtle Toggle for Full Scanned Metadata (Hidden by Default on Scan Screen) -->
+        <div class="flex items-center justify-between pt-0.5">
+          <button id="toggleScannedDetailsBtn" type="button" class="text-[11px] font-extrabold text-blue-900 hover:text-blue-700 underline cursor-pointer">
+            Show Scanned Details (Tech / QR / Visits)
+          </button>
+          <span id="scannedQrCompactBadge" class="font-mono text-[10px] font-bold text-slate-500">QR: Pending</span>
+        </div>
+
+        <!-- Collapsible Scanned Metadata (Hidden by Default) -->
+        <div id="scannedDetailsPanel" class="bg-white border border-slate-200 rounded-2xl p-3 space-y-2 hidden">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label for="entryTechName" class="block text-[10px] font-bold text-slate-600 mb-0.5">Technician Name</label>
+              <input id="entryTechName" type="text" class="w-full p-2 border border-slate-300 rounded-xl bg-slate-50 text-xs" placeholder="Technician name (auto/optional)" />
+            </div>
+            <div>
+              <label for="entryTechMobile" class="block text-[10px] font-bold text-slate-600 mb-0.5">Technician Mobile</label>
+              <input id="entryTechMobile" type="tel" class="w-full p-2 border border-slate-300 rounded-xl bg-slate-50 text-xs" placeholder="10-digit mobile" />
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div>
+              <label for="entryQrId" class="block text-[10px] font-bold text-slate-600 mb-0.5">QR Code ID</label>
+              <input id="entryQrId" type="text" class="w-full p-2 border border-slate-300 rounded-xl bg-slate-50 font-mono text-xs" placeholder="Auto or manual QR ID" />
+            </div>
+            <div>
+              <label for="entryTrade" class="block text-[10px] font-bold text-slate-600 mb-0.5">Trade</label>
+              <input id="entryTrade" type="text" class="w-full p-2 border border-slate-300 rounded-xl bg-slate-50 text-xs" placeholder="Plumber / Tile / POP" />
+            </div>
+            <div>
+              <label for="entryRewardPoints" class="block text-[10px] font-bold text-slate-600 mb-0.5">Reward Pts (1/₹100)</label>
+              <input id="entryRewardPoints" type="number" min="0" step="1" class="w-full p-2 border border-slate-300 rounded-xl bg-slate-50 font-bold text-amber-800 text-xs" placeholder="Auto" />
+            </div>
+          </div>
+          <div>
+            <label for="entryNote" class="block text-[10px] font-bold text-slate-600 mb-0.5">Note</label>
+            <input id="entryNote" type="text" class="w-full p-2 border border-slate-300 rounded-xl bg-slate-50 text-xs" placeholder="Optional note" />
+          </div>
+          <div id="scannedTechHistoryLine" class="text-[10px] font-bold text-slate-600 bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-200">
+            Technician History: 0 visits • Yearly Total: ₹0
+          </div>
+          <div class="flex gap-1.5 pt-1">
+            <input id="manualQrTextInput" type="text" class="flex-1 p-2 text-[11px] border border-slate-300 rounded-xl bg-white font-mono" placeholder="Paste raw QR JSON/text if needed" />
+            <button id="decodeManualQrBtn" type="button" class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-[11px] px-3 rounded-xl cursor-pointer shrink-0">
+              Parse QR
+            </button>
+          </div>
+        </div>
+
+        <!-- Extra-Large Unmistakable SAVE BILL Button -->
+        <button id="saveBillBtn" type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-black text-base sm:text-lg py-4 px-5 rounded-2xl shadow-xl tracking-wide cursor-pointer transition">
+          ✓ SAVE BILL
+        </button>
+      </form>
+    </section>
+    <!-- === [BLOCK END: BIG_QR_SCANNER_CAMERA_GALLERY] === -->
+
+    <!-- === [BLOCK START: TODAY_DASHBOARD_500_SCALE] === -->
+    <!-- Compact Today's Ledger Summary & 500+/Day Searchable List -->
+    <section aria-label="Today's Scan Summary" class="bg-white rounded-3xl p-3.5 sm:p-4 border border-slate-200 shadow-sm space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <div>
+          <span class="text-[10px] font-black uppercase tracking-wider text-blue-900 bg-blue-50 px-2.5 py-0.5 rounded-full">Aaj Ka Hisab (Today)</span>
+          <h2 class="text-sm font-black text-slate-900 mt-1">Today's Saved Bills</h2>
+        </div>
+        <span id="todayDatePill" class="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-xl"></span>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2.5">
+          <p class="text-[10px] font-extrabold text-slate-500 uppercase">Today's Scans</p>
+          <p id="todayScansCount" class="text-2xl font-black text-blue-950 mt-0.5">0</p>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2.5">
+          <p class="text-[10px] font-extrabold text-slate-500 uppercase">Today's Bill</p>
+          <p id="todayBillTotal" class="text-xl sm:text-2xl font-black text-emerald-700 mt-0.5">₹0</p>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2.5">
+          <p class="text-[10px] font-extrabold text-slate-500 uppercase">Reward Points</p>
+          <p id="todayPointsTotal" class="text-2xl font-black text-amber-600 mt-0.5">0</p>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2.5">
+          <p class="text-[10px] font-extrabold text-slate-500 uppercase">Dup Blocked</p>
+          <p id="todayDupBlockedCount" class="text-2xl font-black text-red-600 mt-0.5">0</p>
+        </div>
+      </div>
+
+      <!-- Fast Search & Page Controls for 500+ Daily Entries -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1">
+        <input id="todaySearchInput" type="search" class="flex-1 p-2 text-xs border border-slate-300 rounded-xl bg-slate-50 focus:bg-white" placeholder="Search today's bills by Bill No, Technician, Mobile, or QR ID..." />
+        <div class="flex items-center justify-between sm:justify-end gap-1.5 text-[11px]">
+          <span id="todayPageInfo" class="text-slate-500 font-semibold px-1">0 entries</span>
+          <button id="todayPrevPageBtn" type="button" class="px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 font-bold cursor-pointer disabled:opacity-40" disabled>Prev</button>
+          <button id="todayNextPageBtn" type="button" class="px-2.5 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 font-bold cursor-pointer disabled:opacity-40" disabled>Next</button>
+        </div>
+      </div>
+
+      <!-- Today's Entries Table (Empty by Default) -->
+      <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead class="bg-slate-900 text-white text-[11px]">
+            <tr>
+              <th class="p-2">Bill / Time</th>
+              <th class="p-2">Technician &amp; QR</th>
+              <th class="p-2 text-right">Amount</th>
+              <th class="p-2 text-center">Del</th>
+            </tr>
+          </thead>
+          <tbody id="todayLedgerTbody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+      <div id="todayEmptyState" class="text-center py-5 text-xs text-slate-400 font-semibold bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
+        Aaj abhi 0 bill entry hai. Upar QR scan karke ya Bill Number + Amount daal kar SAVE BILL karein.
+      </div>
+    </section>
+    <!-- === [BLOCK END: TODAY_DASHBOARD_500_SCALE] === -->
+
+  </main>
+
+  <script>
+  (() => {
+    "use strict";
+
+    /* =====================================================================
+       SHARED UTILITIES, STORAGE KEYS & ZERO-DUMMY-DATA DEFAULT STATE
+       ===================================================================== */
+    const STORAGE_KEYS = {
+      DEALER_AUTH: "powerplum_dealer_auth_v2",
+      SCAN_RECORDS: "powerplum_dealer_scans_v2",
+      DUP_BLOCKED_DAILY: "powerplum_dup_blocked_v2",
+      SHEETS_WEBHOOK: "powerplum_sheets_webhook_v2"
+    };
+
+    function sanitizeText(val, maxLen = 140) {
+      return String(val ?? "")
+        .replace(/[<>]/g, "")
+        .trim()
+        .slice(0, maxLen);
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? "").replace(/[&<>"']/g, (m) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[m]));
+    }
+
+    function readJson(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (err) {
+        return fallback;
+      }
+    }
+
+    function writeJson(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (err) {
+        showToast("Storage space full ya blocked hai. Backup lekar purana data export karein.");
+      }
+    }
+
+    function getTodayKey() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, "0");
+      const d = String(now.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function getMonthKey() {
+      return getTodayKey().slice(0, 7);
+    }
+
+    function formatInr(num) {
+      return "₹" + Number(num || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById("dealerToast");
+      if (!el) return;
+      el.textContent = msg;
+      el.classList.remove("hidden");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => el.classList.add("hidden"), 2800);
+    }
+
+    function speakConfirmation(text) {
+      if (!("speechSynthesis" in window)) return;
+      try {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = "hi-IN";
+        window.speechSynthesis.speak(u);
+      } catch (e) {}
+    }
+
+    // Zero pre-filled dummy entries on first load
+    let scanRecords = readJson(STORAGE_KEYS.SCAN_RECORDS, []);
+    if (!Array.isArray(scanRecords)) scanRecords = [];
+
+    let dupBlockedCounter = readJson(STORAGE_KEYS.DUP_BLOCKED_DAILY, { dayKey: getTodayKey(), count: 0 });
+    if (!dupBlockedCounter || dupBlockedCounter.dayKey !== getTodayKey()) {
+      dupBlockedCounter = { dayKey: getTodayKey(), count: 0 };
+      writeJson(STORAGE_KEYS.DUP_BLOCKED_DAILY, dupBlockedCounter);
+    }
+
+    function incrementDupBlockedCount() {
+      if (dupBlockedCounter.dayKey !== getTodayKey()) {
+        dupBlockedCounter = { dayKey: getTodayKey(), count: 0 };
+      }
+      dupBlockedCounter.count += 1;
+      writeJson(STORAGE_KEYS.DUP_BLOCKED_DAILY, dupBlockedCounter);
+      renderTodayDashboard();
+    }
+
+    function pushToGoogleSheetsIfConfigured(record) {
+      const url = sanitizeText(localStorage.getItem(STORAGE_KEYS.SHEETS_WEBHOOK) || "", 400);
+      if (!url || !url.startsWith("https://")) return;
+      try {
+        fetch(url, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(record)
+        }).catch(() => {});
+      } catch (err) {}
+    }
+
+    /* === [BLOCK START: DEALER_AUTH_SECURITY] === */
+    let dealerAuth = readJson(STORAGE_KEYS.DEALER_AUTH, null);
+    let sessionUnlocked = false;
+
+    function getDealerAuth() {
+      return dealerAuth && dealerAuth.mobile && dealerAuth.storeName ? dealerAuth : null;
+    }
+
+    function syncDealerHeaderUI() {
+      const auth = getDealerAuth();
+      const badgeEl = document.getElementById("headerStoreBadge");
+      const titleEl = document.getElementById("topStoreTitle");
+      const subEl = document.getElementById("topDealerSubtitle");
+      const authBtn = document.getElementById("openDealerAuthBtn");
+      const drawerCap = document.getElementById("drawerDealerCaption");
+
+      if (auth) {
+        badgeEl.textContent = "STORE";
+        titleEl.textContent = auth.storeName;
+        subEl.textContent = `${auth.dealerName} • ${auth.mobile}`;
+        authBtn.textContent = "Store";
+        drawerCap.textContent = `${auth.storeName} (${auth.mobile})`;
+      } else {
+        badgeEl.textContent = "LIVE";
+        titleEl.textContent = "Power Plum Dealer QR";
+        subEl.textContent = "Tap Login for Mobile & Store";
+        authBtn.textContent = "Login";
+        drawerCap.textContent = "Dealer Login Pending";
+      }
+    }
+
+    function openDealerAuthModal() {
+      const auth = getDealerAuth();
+      document.getElementById("authDealerMobile").value = auth?.mobile || "";
+      document.getElementById("authDealerName").value = auth?.dealerName || "";
+      document.getElementById("authStoreName").value = auth?.storeName || "";
+      document.getElementById("authPinInput").value = "";
+      document.getElementById("dealerAuthModal").classList.remove("hidden");
+    }
+
+    function closeDealerAuthModal() {
+      document.getElementById("dealerAuthModal").classList.add("hidden");
+    }
+
+    function enforcePinLockIfNeeded() {
+      const auth = getDealerAuth();
+      if (!auth || !auth.pinHash || sessionUnlocked) {
+        document.getElementById("dealerPinLockScreen").classList.add("hidden");
+        return;
+      }
+      document.getElementById("pinLockStoreLabel").textContent = `${auth.storeName} (${auth.mobile})`;
+      document.getElementById("unlockPinInput").value = "";
+      document.getElementById("unlockPinError").classList.add("hidden");
+      document.getElementById("dealerPinLockScreen").classList.remove("hidden");
+    }
+
+    function simplePinCode(pinStr) {
+      let h = 2166136261;
+      for (let i = 0; i < pinStr.length; i++) {
+        h ^= pinStr.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return String(h >>> 0);
+    }
+
+    document.getElementById("openDealerAuthBtn").addEventListener("click", openDealerAuthModal);
+    document.getElementById("closeDealerAuthModalBtn").addEventListener("click", closeDealerAuthModal);
+
+    document.getElementById("dealerAuthForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const mobile = sanitizeText(document.getElementById("authDealerMobile").value, 15).replace(/\D/g, "");
+      const dealerName = sanitizeText(document.getElementById("authDealerName").value, 80);
+      const storeName = sanitizeText(document.getElementById("authStoreName").value, 100);
+      const rawPin = sanitizeText(document.getElementById("authPinInput").value, 6);
+
+      if (mobile.length < 10 || !dealerName || !storeName) {
+        showToast("Sahi 10-digit mobile, dealer naam aur store naam bharein.");
+        return;
+      }
+
+      dealerAuth = {
+        mobile,
+        dealerName,
+        storeName,
+        pinHash: rawPin ? simplePinCode(rawPin) : "",
+        updatedAt: new Date().toISOString()
+      };
+      sessionUnlocked = true;
+      writeJson(STORAGE_KEYS.DEALER_AUTH, dealerAuth);
+      syncDealerHeaderUI();
+      closeDealerAuthModal();
+      showToast("Dealer store login save ho gaya!");
+    });
+
+    document.getElementById("unlockPinBtn").addEventListener("click", () => {
+      const auth = getDealerAuth();
+      const entered = sanitizeText(document.getElementById("unlockPinInput").value, 6);
+      if (auth && simplePinCode(entered) === auth.pinHash) {
+        sessionUnlocked = true;
+        document.getElementById("dealerPinLockScreen").classList.add("hidden");
+        showToast("Store unlocked.");
+      } else {
+        document.getElementById("unlockPinError").classList.remove("hidden");
+      }
+    });
+    /* === [BLOCK END: DEALER_AUTH_SECURITY] === */
+
+    /* === [BLOCK START: TODAY_DASHBOARD_500_SCALE] === */
+    let todayPage = 1;
+    const TODAY_PAGE_SIZE = 25;
+    document.getElementById("todayDatePill").textContent = new Date().toLocaleDateString("en-IN", {
+      day: "2-digit", month: "short", year: "numeric"
+    });
+
+    function getTodayRecords() {
+      const tk = getTodayKey();
+      const q = sanitizeText(document.getElementById("todaySearchInput")?.value || "", 80).toLowerCase();
+      return scanRecords.filter((r) => {
+        if (r.dayKey !== tk) return false;
+        if (!q) return true;
+        const hay = `${r.techName || ""} ${r.techMobile || ""} ${r.qrId || ""} ${r.billNo || ""} ${r.trade || ""}`.toLowerCase();
+        return hay.includes(q);
+      });
+    }
+
+    function renderTodayDashboard() {
+      const tk = getTodayKey();
+      const allToday = scanRecords.filter((r) => r.dayKey === tk);
+      const filtered = getTodayRecords();
+
+      const scansCount = allToday.length;
+      const billSum = allToday.reduce((acc, r) => acc + Number(r.billAmount || 0), 0);
+      const ptsSum = allToday.reduce((acc, r) => acc + Number(r.rewardPoints || 0), 0);
+      const dupCount = dupBlockedCounter.dayKey === tk ? Number(dupBlockedCounter.count || 0) : 0;
+
+      // Compact header glance + dashboard stats
+      const hdrCount = document.getElementById("headerTodayCount");
+      const hdrBill = document.getElementById("headerTodayBill");
+      if (hdrCount) hdrCount.textContent = String(scansCount);
+      if (hdrBill) hdrBill.textContent = formatInr(billSum);
+
+      document.getElementById("todayScansCount").textContent = String(scansCount);
+      document.getElementById("todayBillTotal").textContent = formatInr(billSum);
+      document.getElementById("todayPointsTotal").textContent = String(ptsSum);
+      document.getElementById("todayDupBlockedCount").textContent = String(dupCount);
+
+      const totalPages = Math.max(1, Math.ceil(filtered.length / TODAY_PAGE_SIZE));
+      if (todayPage > totalPages) todayPage = totalPages;
+      const startIdx = (todayPage - 1) * TODAY_PAGE_SIZE;
+      const pageSlice = filtered.slice(startIdx, startIdx + TODAY_PAGE_SIZE);
+
+      document.getElementById("todayPageInfo").textContent =
+        filtered.length ? `${startIdx + 1}-${startIdx + pageSlice.length} of ${filtered.length}` : "0 entries";
+      document.getElementById("todayPrevPageBtn").disabled = todayPage <= 1;
+      document.getElementById("todayNextPageBtn").disabled = todayPage >= totalPages;
+
+      const tbody = document.getElementById("todayLedgerTbody");
+      const emptyEl = document.getElementById("todayEmptyState");
+
+      if (!pageSlice.length) {
+        tbody.innerHTML = "";
+        emptyEl.classList.remove("hidden");
+        return;
+      }
+      emptyEl.classList.add("hidden");
+
+      tbody.innerHTML = pageSlice.map((r) =>
+        "<tr class='hover:bg-slate-50'>" +
+          "<td class='p-2'><div class='font-black text-slate-950 text-xs'>" + escapeHtml(r.billNo || r.qrId) + "</div><div class='text-[10px] text-slate-400'>" + escapeHtml(r.timeStr || "") + "</div></td>" +
+          "<td class='p-2'><div class='font-bold text-slate-800 text-[11px]'>" + escapeHtml(r.techName || "Walk-in Bill") + "</div><div class='font-mono text-[10px] text-slate-500'>" + escapeHtml(r.qrId || "-") + (r.overrideReason ? " • [Override]" : "") + "</div></td>" +
+          "<td class='p-2 text-right font-black text-emerald-800 text-xs'>" + formatInr(r.billAmount) + "</td>" +
+          "<td class='p-2 text-center'><button type='button' data-del-scan='" + escapeHtml(r.id) + "' class='text-red-600 hover:text-red-800 font-bold px-1.5 cursor-pointer'>✕</button></td>" +
+        "</tr>"
+      ).join("");
+
+      tbody.querySelectorAll("[data-del-scan]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const targetId = btn.getAttribute("data-del-scan");
+          scanRecords = scanRecords.filter((item) => item.id !== targetId);
+          writeJson(STORAGE_KEYS.SCAN_RECORDS, scanRecords);
+          refreshAllViews();
+          showToast("Bill entry deleted.");
+        });
+      });
+    }
+
+    document.getElementById("todaySearchInput").addEventListener("input", () => {
+      todayPage = 1;
+      renderTodayDashboard();
+    });
+    document.getElementById("todayPrevPageBtn").addEventListener("click", () => {
+      if (todayPage > 1) {
+        todayPage -= 1;
+        renderTodayDashboard();
+      }
+    });
+    document.getElementById("todayNextPageBtn").addEventListener("click", () => {
+      todayPage += 1;
+      renderTodayDashboard();
+    });
+    /* === [BLOCK END: TODAY_DASHBOARD_500_SCALE] === */
+
+    /* === [BLOCK START: DUPLICATE_GUARD] === */
+    let pendingDuplicateRecord = null;
+
+    function findExistingDuplicate(qrId, billNo) {
+      const normQr = sanitizeText(qrId, 80).toUpperCase();
+      const normBill = sanitizeText(billNo, 80).toUpperCase();
+      return scanRecords.find((r) => {
+        const sameQr = normQr && String(r.qrId || "").toUpperCase() === normQr;
+        const sameBill = normBill && normBill !== "-" && String(r.billNo || "").toUpperCase() === normBill;
+        return sameQr || (sameQr && sameBill);
+      }) || null;
+    }
+
+    function openDuplicateWarningModal(existingRec, candidateRec) {
+      pendingDuplicateRecord = candidateRec;
+      document.getElementById("dupExistingDetailsBox").innerHTML =
+        "<p><strong>Pehla Scan Record:</strong></p>" +
+        "<p>QR ID: <span class='font-mono font-bold'>" + escapeHtml(existingRec.qrId) + "</span> | Bill: <strong>" + escapeHtml(existingRec.billNo || "-") + "</strong></p>" +
+        "<p>Technician: <strong>" + escapeHtml(existingRec.techName) + "</strong> (" + escapeHtml(existingRec.techMobile || "-") + ")</p>" +
+        "<p>Samay: " + escapeHtml(existingRec.scannedAt || "-") + " | Bill: <strong>" + formatInr(existingRec.billAmount) + "</strong></p>";
+      document.getElementById("dupOverrideReasonInput").value = "";
+      document.getElementById("duplicateWarningModal").classList.remove("hidden");
+    }
+
+    function closeDuplicateWarningModal() {
+      pendingDuplicateRecord = null;
+      document.getElementById("duplicateWarningModal").classList.add("hidden");
+    }
+
+    function commitScanRecord(rec) {
+      scanRecords.unshift(rec);
+      writeJson(STORAGE_KEYS.SCAN_RECORDS, scanRecords);
+      pushToGoogleSheetsIfConfigured(rec);
+      refreshAllViews();
+
+      // Reset focused bill form cleanly for next counter bill
+      document.getElementById("entryBillNo").value = "";
+      document.getElementById("entryBillAmount").value = "";
+      document.getElementById("entryRewardPoints").value = "";
+      delete document.getElementById("entryRewardPoints").dataset.userEdited;
+      document.getElementById("entryNote").value = "";
+      document.getElementById("confirmHighAmountCheckbox").checked = false;
+      updateAmountSafetyUI();
+      showToast(`SAVED: ${rec.billNo} • ${formatInr(rec.billAmount)}`);
+      speakConfirmation(`Bill ${rec.billNo} save ho gaya, rakam ${Math.round(rec.billAmount)} rupaye.`);
+    }
+
+    document.getElementById("closeDupModalBtn").addEventListener("click", () => {
+      incrementDupBlockedCount();
+      closeDuplicateWarningModal();
+      showToast("Duplicate scan blocked.");
+    });
+
+    document.getElementById("blockDuplicateConfirmBtn").addEventListener("click", () => {
+      incrementDupBlockedCount();
+      closeDuplicateWarningModal();
+      showToast("Duplicate entry blocked! Aaj ke Dup Blocked counter mein joda gaya.");
+    });
+
+    document.getElementById("allowDuplicateOverrideBtn").addEventListener("click", () => {
+      if (!pendingDuplicateRecord) return;
+      const reason = sanitizeText(document.getElementById("dupOverrideReasonInput").value, 140) || "Dealer Override";
+      const approved = { ...pendingDuplicateRecord, overrideReason: reason };
+      closeDuplicateWarningModal();
+      commitScanRecord(approved);
+    });
+    /* === [BLOCK END: DUPLICATE_GUARD] === */
+
+    /* === [BLOCK START: BIG_QR_SCANNER_CAMERA_GALLERY] === */
+    let activeStream = null;
+    let scanLoopRaf = null;
+
+    function stopCameraScanner() {
+      if (scanLoopRaf) {
+        cancelAnimationFrame(scanLoopRaf);
+        scanLoopRaf = null;
+      }
+      if (activeStream) {
+        activeStream.getTracks().forEach((t) => t.stop());
+        activeStream = null;
+      }
+      const vid = document.getElementById("liveQrVideo");
+      if (vid) {
+        vid.srcObject = null;
+      }
+      document.getElementById("cameraViewportBox").classList.add("hidden");
+      const badge = document.getElementById("qrScannerStateBadge");
+      badge.textContent = "Idle";
+      badge.className = "text-[10px] font-black px-2.5 py-1 rounded-full bg-slate-100 text-slate-700";
+    }
+
+    function applyDecodedQrString(rawStr) {
+      const cleaned = sanitizeText(rawStr, 1500);
+      if (!cleaned) {
+        showToast("QR data khali hai.");
+        return;
+      }
+
+      let parsed = null;
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch (e) {
+        parsed = null;
+      }
+
+      let qrId = "";
+      let billNo = "";
+      let techName = "";
+      let techMobile = "";
+      let trade = "";
+
+      if (parsed && typeof parsed === "object") {
+        qrId = sanitizeText(parsed.qrId || parsed.id || "", 80);
+        billNo = sanitizeText(parsed.billNo || parsed.bill || "", 80);
+        techName = sanitizeText(parsed.techName || parsed.technician || parsed.name || "", 80);
+        techMobile = sanitizeText(parsed.techMobile || parsed.mobile || "", 20).replace(/\D/g, "");
+        trade = sanitizeText(parsed.trade || parsed.category || "", 60);
+      } else {
+        const qrMatch = cleaned.match(/PP-QR-[A-Z0-9-]+/i);
+        const billMatch = cleaned.match(/BOQ-[A-Z0-9-]+/i);
+        const mobMatch = cleaned.match(/\b[6-9]\d{9}\b/);
+        qrId = qrMatch ? qrMatch[0].toUpperCase() : "PP-QR-" + Math.floor(100000 + Math.random() * 900000);
+        billNo = billMatch ? billMatch[0].toUpperCase() : "";
+        techMobile = mobMatch ? mobMatch[0] : "";
+        techName = sanitizeText(cleaned.split("|")[0], 80);
+      }
+
+      if (!qrId) {
+        qrId = "PP-QR-" + Math.floor(100000 + Math.random() * 900000);
+      }
+      if (!billNo) {
+        billNo = "BILL-" + String(Date.now()).slice(-6);
+      }
+
+      document.getElementById("entryQrId").value = qrId;
+      document.getElementById("entryBillNo").value = billNo;
+      if (techName) document.getElementById("entryTechName").value = techName;
+      if (techMobile) document.getElementById("entryTechMobile").value = techMobile;
+      if (trade) document.getElementById("entryTrade").value = trade;
+
+      document.getElementById("scannedQrCompactBadge").textContent = `QR: ${qrId}`;
+      document.getElementById("qrDecodeFeedback").textContent = `Scanned ${qrId} — Bill No ready. Amount bharein aur SAVE BILL dabayein.`;
+      updateScannedTechHistorySummary(techName, techMobile);
+
+      // Focus big amount input immediately for fast counter typing
+      const amtInput = document.getElementById("entryBillAmount");
+      amtInput.focus();
+      showToast(`QR Scanned (${qrId}) — Amount enter karein`);
+    }
+
+    function updateScannedTechHistorySummary(name, mobile) {
+      const box = document.getElementById("scannedTechHistoryLine");
+      if (!box) return;
+      const cleanName = sanitizeText(name, 80).toLowerCase();
+      const cleanMob = sanitizeText(mobile, 20).replace(/\D/g, "");
+      if (!cleanName && !cleanMob) {
+        box.textContent = "Technician History: 0 visits • Yearly Total: ₹0";
+        return;
+      }
+      const matches = scanRecords.filter((r) => {
+        const mHit = cleanMob && String(r.techMobile || "") === cleanMob;
+        const nHit = cleanName && String(r.techName || "").toLowerCase() === cleanName;
+        return mHit || nHit;
+      });
+      const yrTotal = matches.reduce((s, x) => s + Number(x.billAmount || 0), 0);
+      box.textContent = `Technician History: ${matches.length} visits • Yearly Total: ${formatInr(yrTotal)}`;
+    }
+
+    function tickCameraScan() {
+      const video = document.getElementById("liveQrVideo");
+      const canvas = document.getElementById("qrWorkCanvas");
+      if (!video || !canvas || !activeStream) return;
+
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        if (typeof window.jsQR === "function") {
+          const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const hit = window.jsQR(img.data, img.width, img.height, { inversionAttempts: "attemptBoth" });
+          if (hit && hit.data) {
+            stopCameraScanner();
+            document.getElementById("manualQrTextInput").value = hit.data;
+            applyDecodedQrString(hit.data);
+            return;
+          }
+        }
+      }
+      scanLoopRaf = requestAnimationFrame(tickCameraScan);
+    }
+
+    document.getElementById("bigCameraScanBtn").addEventListener("click", async () => {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast("Is browser mein camera unavailable hai. Gallery/Screenshot button use karein.");
+        return;
+      }
+      try {
+        stopCameraScanner();
+        activeStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false
+        });
+        const video = document.getElementById("liveQrVideo");
+        video.srcObject = activeStream;
+        document.getElementById("cameraViewportBox").classList.remove("hidden");
+        await video.play();
+        const badge = document.getElementById("qrScannerStateBadge");
+        badge.textContent = "Camera Live";
+        badge.className = "text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";
+        scanLoopRaf = requestAnimationFrame(tickCameraScan);
+      } catch (err) {
+        stopCameraScanner();
+        showToast("Camera permission nahi mila. Gallery/Screenshot se QR scan karein.");
+      }
+    });
+
+    document.getElementById("stopLiveCameraBtn").addEventListener("click", stopCameraScanner);
+
+    function decodeImageFileForQr(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const canvas = document.getElementById("qrWorkCanvasFallback");
+              const maxSide = 1400;
+              let w = img.naturalWidth || img.width;
+              let h = img.naturalHeight || img.height;
+              if (w > maxSide || h > maxSide) {
+                const ratio = Math.min(maxSide / w, maxSide / h);
+                w = Math.max(1, Math.round(w * ratio));
+                h = Math.max(1, Math.round(h * ratio));
+              }
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext("2d");
+              ctx.clearRect(0, 0, w, h);
+              ctx.drawImage(img, 0, 0, w, h);
+
+              if (typeof window.jsQR !== "function") {
+                reject(new Error("jsQR library not loaded"));
+                return;
+              }
+
+              const imageData = ctx.getImageData(0, 0, w, h);
+              const hit = window.jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "attemptBoth"
+              });
+
+              if (hit && hit.data) {
+                resolve(hit.data);
+              } else {
+                reject(new Error("QR code not found in image"));
+              }
+            } catch (err) {
+              reject(err);
+            }
+          };
+          img.onerror = () => reject(new Error("Image load failed"));
+          img.src = reader.result;
+        };
+        reader.onerror = () => reject(new Error("File read failed"));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    document.getElementById("galleryQrFileInput")?.addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try {
+        const decoded = await decodeImageFileForQr(file);
+        document.getElementById("manualQrTextInput").value = decoded;
+        applyDecodedQrString(decoded);
+      } catch (err) {
+        showToast("Image mein saaf QR nahi mila. Cropped screenshot try karein ya manual parse karein.");
+      } finally {
+        e.target.value = "";
+      }
+    });
+
+    document.getElementById("decodeManualQrBtn")?.addEventListener("click", () => {
+      const raw = document.getElementById("manualQrTextInput")?.value || "";
+      applyDecodedQrString(raw);
+    });
+
+    function updateAmountSafetyUI() {
+      const amt = Math.max(0, Number(document.getElementById("entryBillAmount").value || 0));
+      const readoutEl = document.getElementById("amountFormattedReadout");
+      const tagEl = document.getElementById("amountSafetyTag");
+      const highBox = document.getElementById("highAmountConfirmBox");
+
+      readoutEl.textContent = formatInr(amt);
+
+      const ptsEl = document.getElementById("entryRewardPoints");
+      if (ptsEl && !ptsEl.dataset.userEdited) {
+        ptsEl.value = String(Math.floor(amt / 100));
+      }
+
+      if (amt >= 50000) {
+        tagEl.textContent = "High Amount (₹50k+) — Verify Zeros";
+        tagEl.className = "font-extrabold text-[10px] px-2 py-0.5 rounded-full bg-amber-200 text-amber-950";
+        highBox.classList.remove("hidden");
+      } else {
+        tagEl.textContent = amt > 0 ? "Amount Verified" : "Enter Amount";
+        tagEl.className = "font-extrabold text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900";
+        highBox.classList.add("hidden");
+        document.getElementById("confirmHighAmountCheckbox").checked = false;
+      }
+    }
+
+    document.getElementById("entryBillAmount").addEventListener("input", updateAmountSafetyUI);
+
+    document.getElementById("clearAmountBtn").addEventListener("click", () => {
+      document.getElementById("entryBillAmount").value = "";
+      document.getElementById("confirmHighAmountCheckbox").checked = false;
+      updateAmountSafetyUI();
+      document.getElementById("entryBillAmount").focus();
+    });
+
+    document.getElementById("toggleScannedDetailsBtn").addEventListener("click", () => {
+      const panel = document.getElementById("scannedDetailsPanel");
+      const btn = document.getElementById("toggleScannedDetailsBtn");
+      const isHidden = panel.classList.contains("hidden");
+      panel.classList.toggle("hidden", !isHidden);
+      btn.textContent = isHidden
+        ? "Hide Scanned Details"
+        : "Show Scanned Details (Tech / QR / Visits)";
+      if (isHidden) {
+        updateScannedTechHistorySummary(
+          document.getElementById("entryTechName").value,
+          document.getElementById("entryTechMobile").value
+        );
+      }
+    });
+
+    document.getElementById("scanEntryForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const billNo = sanitizeText(document.getElementById("entryBillNo").value, 80).toUpperCase();
+      const billAmount = Math.max(0, Number(document.getElementById("entryBillAmount").value || 0));
+
+      if (!billNo) {
+        showToast("Bill Number zaroori hai.");
+        document.getElementById("entryBillNo").focus();
+        return;
+      }
+      if (billAmount <= 0) {
+        showToast("Sahi Bill Amount (₹) bharein.");
+        document.getElementById("entryBillAmount").focus();
+        return;
+      }
+      if (billAmount >= 50000 && !document.getElementById("confirmHighAmountCheckbox").checked) {
+        showToast("₹50,000+ rakam ke liye neeche confirmation checkbox tick karein.");
+        return;
+      }
+
+      const qrId = sanitizeText(document.getElementById("entryQrId").value, 80).toUpperCase() || ("MANUAL-" + billNo);
+      const techName = sanitizeText(document.getElementById("entryTechName").value, 80) || "Counter Bill";
+      const techMobile = sanitizeText(document.getElementById("entryTechMobile").value, 20).replace(/\D/g, "");
+      const trade = sanitizeText(document.getElementById("entryTrade").value, 60) || "General";
+      const rawPts = document.getElementById("entryRewardPoints").value;
+      const rewardPoints = rawPts !== "" ? Math.max(0, Number(rawPts)) : Math.floor(billAmount / 100);
+      const note = sanitizeText(document.getElementById("entryNote").value, 160);
+
+      const now = new Date();
+      const record = {
+        id: "SCN-" + Date.now() + "-" + Math.random().toString(36).slice(2, 5).toUpperCase(),
+        dayKey: getTodayKey(),
+        monthKey: getMonthKey(),
+        timeStr: now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
+        scannedAt: now.toLocaleString("en-IN"),
+        qrId,
+        billNo,
+        techName,
+        techMobile,
+        trade,
+        billAmount,
+        rewardPoints,
+        note,
+        dealerMobile: getDealerAuth()?.mobile || "",
+        storeName: getDealerAuth()?.storeName || ""
+      };
+
+      const existingDup = findExistingDuplicate(qrId, billNo);
+      if (existingDup) {
+        openDuplicateWarningModal(existingDup, record);
+        return;
+      }
+
+      commitScanRecord(record);
+    });
+    /* === [BLOCK END: BIG_QR_SCANNER_CAMERA_GALLERY] === */
+
+    /* === [BLOCK START: TECH_VISIT_COUNTER] === */
+    function renderTechnicianVisitTracker() {
+      const period = document.getElementById("visitPeriodFilter")?.value || "ALL";
+      const tk = getTodayKey();
+      const mk = getMonthKey();
+
+      const filtered = scanRecords.filter((r) => {
+        if (period === "TODAY") return r.dayKey === tk;
+        if (period === "MONTH") return r.monthKey === mk;
+        return true;
+      });
+
+      const listEl = document.getElementById("visitTrackerList");
+      const emptyEl = document.getElementById("visitTrackerEmpty");
+
+      if (!filtered.length) {
+        listEl.innerHTML = "";
+        emptyEl.classList.remove("hidden");
+        return;
+      }
+      emptyEl.classList.add("hidden");
+
+      const statsMap = new Map();
+      filtered.forEach((r) => {
+        const key = `${r.techMobile || ""}|${(r.techName || "").toLowerCase()}`;
+        if (!statsMap.has(key)) {
+          statsMap.set(key, {
+            techName: r.techName,
+            techMobile: r.techMobile || "-",
+            trade: r.trade || "General",
+            visits: 0,
+            totalBill: 0,
+            totalPoints: 0,
+            lastSeen: r.scannedAt || "-"
+          });
+        }
+        const item = statsMap.get(key);
+        item.visits += 1;
+        item.totalBill += Number(r.billAmount || 0);
+        item.totalPoints += Number(r.rewardPoints || 0);
+        item.lastSeen = r.scannedAt || item.lastSeen;
+      });
+
+      const rows = Array.from(statsMap.values()).sort((a, b) => b.visits - a.visits || b.totalBill - a.totalBill);
+      listEl.innerHTML = rows.map((t, i) =>
+        "<div class='bg-slate-50 border border-slate-200 rounded-2xl p-2.5 space-y-1'>" +
+          "<div class='flex items-center justify-between gap-2'>" +
+            "<span class='font-black text-slate-900'>" + (i + 1) + ". " + escapeHtml(t.techName) + "</span>" +
+            "<span class='bg-blue-900 text-white text-[10px] font-black px-2 py-0.5 rounded-full'>" + t.visits + " Bar Aaye</span>" +
+          "</div>" +
+          "<p class='text-[10px] text-slate-500'>Mobile: " + escapeHtml(t.techMobile) + " • Trade: " + escapeHtml(t.trade) + "</p>" +
+          "<div class='flex items-center justify-between text-[11px] pt-0.5'>" +
+            "<span class='font-extrabold text-emerald-800'>Bill: " + formatInr(t.totalBill) + "</span>" +
+            "<span class='font-black text-amber-700'>Inam Pts: " + t.totalPoints + "</span>" +
+          "</div>" +
+        "</div>"
+      ).join("");
+    }
+
+    document.getElementById("visitPeriodFilter")?.addEventListener("change", renderTechnicianVisitTracker);
+    /* === [BLOCK END: TECH_VISIT_COUNTER] === */
+
+    /* === [BLOCK START: SHEETS_EXCEL_SYNC_GUIDE] === */
+    function csvEscape(v) {
+      return '"' + String(v ?? "").replace(/"/g, '""') + '"';
+    }
+
+    function exportRecordsToCsv() {
+      const headers = [
+        "Record ID", "Date Key", "Date/Time", "QR ID", "Bill No",
+        "Technician Name", "Technician Mobile", "Trade",
+        "Bill Amount (INR)", "Reward Points", "Note", "Store Name"
+      ];
+      const lines = [headers.map(csvEscape).join(",")];
+      scanRecords.forEach((r) => {
+        lines.push([
+          r.id, r.dayKey, r.scannedAt, r.qrId, r.billNo || "",
+          r.techName, r.techMobile || "", r.trade || "",
+          Number(r.billAmount || 0), Number(r.rewardPoints || 0),
+          r.note || "", r.storeName || ""
+        ].map(csvEscape).join(","));
+      });
+      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `PowerPlum_Dealer_Ledger_${getTodayKey()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast("Excel/Sheets CSV downloaded!");
+    }
+
+    function exportRecordsToJson() {
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        dealer: getDealerAuth(),
+        totalRecords: scanRecords.length,
+        records: scanRecords
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `PowerPlum_Dealer_Backup_${getTodayKey()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast("JSON backup downloaded!");
+    }
+
+    document.getElementById("quickCsvTopBtn")?.addEventListener("click", exportRecordsToCsv);
+    document.getElementById("drawerExportCsvBtn")?.addEventListener("click", exportRecordsToCsv);
+    document.getElementById("drawerExportJsonBtn")?.addEventListener("click", exportRecordsToJson);
+
+    const savedWebhook = localStorage.getItem(STORAGE_KEYS.SHEETS_WEBHOOK) || "";
+    if (document.getElementById("sheetsWebhookUrlInput")) {
+      document.getElementById("sheetsWebhookUrlInput").value = savedWebhook;
+    }
+
+    document.getElementById("saveSheetsWebhookBtn")?.addEventListener("click", () => {
+      const u = sanitizeText(document.getElementById("sheetsWebhookUrlInput").value, 400);
+      if (u && !u.startsWith("https://")) {
+        showToast("Kripya HTTPS Google Apps Script URL enter karein.");
+        return;
+      }
+      localStorage.setItem(STORAGE_KEYS.SHEETS_WEBHOOK, u);
+      showToast(u ? "Google Sheet webhook saved!" : "Webhook cleared.");
+    });
+
+    document.getElementById("copyAppsScriptBtn")?.addEventListener("click", () => {
+      const code = document.getElementById("appsScriptCode")?.textContent || "";
+      if (!code) return;
+      let ok = false;
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = code;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        ok = document.execCommand("copy");
+        ta.remove();
+      } catch (e) {
+        ok = false;
+      }
+      showToast(ok ? "Google Apps Script code copied!" : "Code box se manually copy karein.");
+    });
+    /* === [BLOCK END: SHEETS_EXCEL_SYNC_GUIDE] === */
+
+    // Drawer Navigation & Clear All Controls
+    function openDrawer(initialTab = "visits") {
+      selectDrawerTab(initialTab);
+      document.getElementById("drawerBackdrop").classList.remove("hidden");
+      document.getElementById("dealerDrawer").classList.remove("-translate-x-full");
+    }
+    function closeDrawer() {
+      document.getElementById("dealerDrawer").classList.add("-translate-x-full");
+      document.getElementById("drawerBackdrop").classList.add("hidden");
+    }
+
+    function selectDrawerTab(tabName) {
+      document.getElementById("drawerPaneVisitTracker").classList.toggle("hidden", tabName !== "visits");
+      document.getElementById("drawerPaneSheetsGuide").classList.toggle("hidden", tabName !== "sheets");
+      document.getElementById("drawerPaneSecurityBackup").classList.toggle("hidden", tabName !== "security");
+
+      const activeCls = "w-full text-left px-3 py-2.5 rounded-xl font-black bg-blue-900 text-white flex items-center justify-between cursor-pointer";
+      const idleCls = "w-full text-left px-3 py-2.5 rounded-xl font-bold bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 flex items-center justify-between cursor-pointer";
+
+      document.getElementById("navVisitTrackerBtn").className = tabName === "visits" ? activeCls : idleCls;
+      document.getElementById("navSheetsGuideBtn").className = tabName === "sheets" ? activeCls : idleCls;
+      document.getElementById("navSecurityBackupBtn").className = tabName === "security" ? activeCls : idleCls;
+
+      if (tabName === "visits") renderTechnicianVisitTracker();
+    }
+
+    document.getElementById("openDrawerBtn").addEventListener("click", () => openDrawer("visits"));
+    document.getElementById("closeDrawerBtn").addEventListener("click", closeDrawer);
+    document.getElementById("drawerBackdrop").addEventListener("click", closeDrawer);
+    document.getElementById("navVisitTrackerBtn").addEventListener("click", () => selectDrawerTab("visits"));
+    document.getElementById("navSheetsGuideBtn").addEventListener("click", () => selectDrawerTab("sheets"));
+    document.getElementById("navSecurityBackupBtn").addEventListener("click", () => selectDrawerTab("security"));
+
+    document.getElementById("confirmClearAllBtn")?.addEventListener("click", () => {
+      const typed = sanitizeText(document.getElementById("confirmResetInput").value, 20);
+      if (typed !== "RESET") {
+        showToast("Confirm karne ke liye RESET likhein.");
+        return;
+      }
+      scanRecords = [];
+      dupBlockedCounter = { dayKey: getTodayKey(), count: 0 };
+      writeJson(STORAGE_KEYS.SCAN_RECORDS, []);
+      writeJson(STORAGE_KEYS.DUP_BLOCKED_DAILY, dupBlockedCounter);
+      document.getElementById("confirmResetInput").value = "";
+      refreshAllViews();
+      showToast("All records cleared (0).");
+    });
+
+    function refreshAllViews() {
+      renderTodayDashboard();
+      renderTechnicianVisitTracker();
+    }
+
+    // Boot
+    syncDealerHeaderUI();
+    enforcePinLockIfNeeded();
+    updateAmountSafetyUI();
+    refreshAllViews();
+  })();
+  </script>
+</body>
+</html>

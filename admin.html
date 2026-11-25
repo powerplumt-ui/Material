@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Power Plum — Master Admin Control Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-[#f1f5f9] text-slate-900 min-h-screen pb-20 lg:pb-8">
+
+  <!-- Non-blocking Toast Banner -->
+  <div id="adminToast" class="fixed bottom-20 lg:bottom-5 left-1/2 -translate-x-1/2 z-[120] bg-slate-950 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-700 hidden max-w-[92vw] text-center"></div>
+
+  <!-- Live Modal Preview for Ads / Broadcasts -->
+  <div id="adminPreviewModal" class="fixed inset-0 z-[115] bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="bg-slate or-900 text-white px-4 py-3 flex items-center justify-between">
+        <span id="previewModalTitle" class="text-xs font-black uppercase tracking-wider text-amber-300">Live Preview</span>
+        <button id="closePreviewModalBtn" type="button" class="bg-white/15 hover:bg-white/25 text-white font-bold text-xs px-2.5 py-1 rounded-xl cursor-pointer">✕ Close</button>
+      </div>
+      <div id="previewModalBody" class="p-4 space-y-3 text-xs"></div>
+    </div>
+  </div>
+
+  <!-- === [BLOCK START: ADMIN_CORE_AND_SYNC_BRIDGE] === -->
+  <!-- Passcode / PIN Lock Modal (Default: 1234) -->
+  <div id="adminPinOverlay" class="fixed inset-0 z-[110] bg-slate-950/90 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-slate-200 space-y-3.5 text-center">
+      <span class="inline-block bg-indigo-100 text-indigo-900 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">Master Admin Security</span>
+      <h2 class="text-lg font-black text-slate-950">Enter Admin PIN</h2>
+      <p class="text-xs text-slate-500">Default PIN <strong class="font-mono text-slate-800">1234</strong> hai. Drawer ya Security settings se badal sakte hain.</p>
+      <input id="adminPinInput" type="password" inputmode="numeric" maxlength="10" class="w-full p-3 border-2 border-slate-300 focus:border-indigo-700 rounded-2xl text-center font-mono text-lg font-black tracking-widest" placeholder="••••" />
+      <p id="adminPinError" class="text-xs font-bold text-red-600 hidden">Galat PIN! Kripya dobara koshish karein.</p>
+      <button id="adminPinUnlockBtn" type="button" class="w-full bg-indigo-950 hover:bg-indigo-900 text-white font-black text-xs sm:text-sm py-3 rounded-2xl shadow-lg cursor-pointer">
+        Unlock Admin Panel
+      </button>
+    </div>
+  </div>
+
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-40 bg-gradient-to-r from-slate-950 via-indigo-950 to-blue-950 text-white shadow-lg border-b border-indigo-900/50">
+    <div class="max-w-7xl mx-auto px-3 sm:px-5 py-2.5 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <button id="adminSidebarToggleBtn" type="button" aria-label="Toggle Menu" class="lg:hidden bg-white/15 hover:bg-white/25 text-white font-black text-sm px-2.5 py-1.5 rounded-xl cursor-pointer shrink-0">
+          ☰
+        </button>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="bg-amber-400 text-slate-950 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">ADMIN</span>
+            <h1 class="text-sm sm:text-base font-black tracking-tight truncate">Power Plum Master Control Panel</h1>
+          </div>
+          <p class="text-[10px] text-indigo-200 truncate">Live Sync with mainapp.html • Telemetry, Trades, Ads &amp; Broadcast</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div id="liveSyncBadge" class="flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-400/30 text-emerald-200 text-[10px] font-bold px-2.5 py-1 rounded-full">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="liveSyncLabel">Live Sync Active</span>
+        </div>
+        <button id="forceSyncNowBtn" type="button" class="bg-white/15 hover:bg-white/25 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-xl cursor-pointer">
+          Refresh
+        </button>
+        <button id="lockAdminPinBtn" type="button" title="Lock Panel" class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] px-2.5 py-1.5 rounded-xl cursor-pointer">
+          Lock
+        </button>
+      </div>
+    </div>
+  </header>
+  <!-- === [BLOCK END: ADMIN_CORE_AND_SYNC_BRIDGE] === -->
+
+  <!-- Responsive Layout: Left Sidebar (Desktop) + Main Content + Mobile Bottom Nav -->
+  <div class="max-w-7xl mx-auto px-3 sm:px-5 pt-4 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+
+    <!-- Sidebar Navigation -->
+    <div id="adminSidebarBackdrop" class="fixed inset-0 z-40 bg-slate-950/60 hidden lg:hidden"></div>
+    <aside id="adminSidebar" class="fixed lg:static top-0 left-0 bottom-0 z-50 lg:z-auto w-72 lg:w-auto lg:col-span-3 bg-white lg:bg-transparent shadow-2xl lg:shadow-none -translate-x-full lg:translate-x-0 transition-transform duration-200 p-3.5 lg:p-0 overflow-y-auto space-y-3">
+      <div class="flex items-center justify-between lg:hidden border-b pb-2.5">
+        <span class="font-black text-sm text-slate-900">Admin Sections</span>
+        <button id="closeAdminSidebarBtn" type="button" class="bg-slate-100 text-slate-700 font-bold text-xs px-2.5 py-1 rounded-xl cursor-pointer">✕</button>
+      </div>
+
+      <nav class="bg-white rounded-3xl p-2.5 border border-slate-200 shadow-xs space-y-1 text-xs">
+        <button type="button" data-admin-tab="telemetry" class="admin-nav-btn w-full text-left px-3 py-2.5 rounded-2xl font-black bg-indigo-950 text-white flex items-center justify-between cursor-pointer">
+          <span>1. Telemetry &amp; Technicians</span>
+          <span class="text-[10px] bg-white/15 px-2 py-0.5 rounded-lg">Logs</span>
+        </button>
+        <button type="button" data-admin-tab="trades" class="admin-nav-btn w-full text-left px-3 py-2.5 rounded-2xl font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-between cursor-pointer">
+          <span>2. Trades &amp; Catalog</span>
+          <span class="text-[10px] bg-blue-100 text-blue-900 px-2 py-0.5 rounded-lg font-extrabold">BOQ</span>
+        </button>
+        <button type="button" data-admin-tab="ads" class="admin-nav-btn w-full text-left px-3 py-2.5 rounded-2xl font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-between cursor-pointer">
+          <span>3. Ads &amp; Media</span>
+          <span class="text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-lg font-extrabold">16:9 / 1:1</span>
+        </button>
+        <button type="button" data-admin-tab="broadcast" class="admin-nav-btn w-full text-left px-3 py-2.5 rounded-2xl font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-between cursor-pointer">
+          <span>4. Broadcast &amp; Config</span>
+          <span class="text-[10px] bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded-lg font-extrabold">Live</span>
+        </button>
+      </nav>
+
+      <!-- Backup, Restore & PIN Security Card -->
+      <div class="bg-white rounded-3xl p-3.5 border border-slate-200 shadow-xs space-y-2.5 text-xs">
+        <p class="text-[11px] font-black uppercase tracking-wider text-slate-700">Backup, Restore &amp; PIN</p>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button id="exportAdminJsonBtn" type="button" class="bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 px-2 rounded-xl text-[11px] cursor-pointer">
+            Export JSON
+          </button>
+          <button id="exportAdminCsvBtn" type="button" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2 px-2 rounded-xl text-[11px] cursor-pointer">
+            Export CSV
+          </button>
+        </div>
+        <label class="block w-full text-center bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2 px-2 rounded-xl text-[11px] cursor-pointer border border-slate-200">
+          Restore JSON Backup
+          <input id="importAdminJsonInput" type="file" accept="application/json,.json" class="hidden" />
+        </label>
+        <div class="pt-1 border-t border-slate-100 space-y-1.5">
+          <label for="newAdminPinInput" class="block text-[10px] font-bold text-slate-600">Change Admin PIN</label>
+          <div class="flex gap-1.5">
+            <input id="newAdminPinInput" type="password" inputmode="numeric" maxlength="10" class="flex-1 p-1.5 border border-slate-300 rounded-xl font-mono text-xs" placeholder="New PIN" />
+            <button id="saveNewAdminPinBtn" type="button" class="bg-indigo-800 hover:bg-indigo-900 text-white font-bold px-2.5 rounded-xl text-[11px] cursor-pointer">Save</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace Area -->
+    <main class="lg:col-span-9 space-y-4">
+
+      <!-- === [BLOCK START: TELEMETRY_AND_TECH_TRACKER] === -->
+      <section id="adminSectionTelemetry" class="space-y-4">
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+          <div class="bg-white rounded-3xl p-3.5 border border-slate-200 shadow-xs">
+            <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Total PDFs Generated</p>
+            <p id="kpiTotalPdfs" class="text-2xl sm:text-3xl font-black text-indigo-950 mt-1">0</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">BOQ &amp; QR PDF exports</p>
+          </div>
+          <div class="bg-white rounded-3xl p-3.5 border border-slate-200 shadow-xs">
+            <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">WhatsApp Shares</p>
+            <p id="kpiTotalWhatsApp" class="text-2xl sm:text-3xl font-black text-emerald-700 mt-1">0</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Customer &amp; dealer shares</p>
+          </div>
+          <div class="bg-white rounded-3xl p-3.5 border border-slate-200 shadow-xs">
+            <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Total Ad Clicks</p>
+            <p id="kpiTotalAdClicks" class="text-2xl sm:text-3xl font-black text-amber-600 mt-1">0</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Popup, square &amp; banner</p>
+          </div>
+          <div class="bg-white rounded-3xl p-3.5 border border-slate-200 shadow-xs">
+            <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Registered Techs</p>
+            <p id="kpiRegisteredTechs" class="text-2xl sm:text-3xl font-black text-blue-800 mt-1">0</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Active partner profiles</p>
+          </div>
+        </div>
+
+        <!-- Registered Technicians Card -->
+        <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 class="text-sm font-black text-slate-900">Registered Technicians &amp; Partners</h2>
+              <p class="text-[11px] text-slate-500">Main app profile &amp; telemetry se track kiye gaye technicians.</p>
+            </div>
+            <span id="techCountBadge" class="self-start sm:self-auto bg-blue-50 text-blue-900 border border-blue-200 text-[11px] font-extrabold px-3 py-1 rounded-full">0 Technicians</span>
+          </div>
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-slate-900 text-white text-[11px]">
+                <tr>
+                  <th class="p-2.5">Technician</th>
+                  <th class="p-2.5">Mobile</th>
+                  <th class="p-2.5">Trade / Shop</th>
+                  <th class="p-2.5 text-center">PDFs</th>
+                  <th class="p-2.5 text-center">WA</th>
+                  <th class="p-2.5 text-center">Ad Clicks</th>
+                </tr>
+              </thead>
+              <tbody id="registeredTechTbody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Technician Activity Logs Card -->
+        <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 class="text-sm font-black text-slate-900">Technician Activity Logs</h2>
+              <p class="text-[11px] text-slate-500">Real-time PDF generation, WhatsApp share, ad clicks &amp; app opens.</p>
+            </div>
+            <button id="clearTelemetryLogsBtn" type="button" class="self-start sm:self-auto bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold text-[11px] px-3 py-1.5 rounded-xl cursor-pointer">
+              Clear Logs
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+            <input id="logSearchInput" type="search" class="sm:col-span-2 p-2.5 border border-slate-300 rounded-2xl bg-slate-50 focus:bg-white" placeholder="Search technician name, mobile, QR ID, trade, or event..." />
+            <select id="logEventFilter" class="p-2.5 border border-slate-300 rounded-2xl bg-white font-bold">
+              <option value="ALL">All Events</option>
+              <option value="pdf_generated">PDF Generated</option>
+              <option value="whatsapp_shared">WhatsApp Shared</option>
+              <option value="ad_clicked">Ad Clicked</option>
+              <option value="app_opened">App Opened</option>
+            </select>
+          </div>
+
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-indigo-950 text-white text-[11px]">
+                <tr>
+                  <th class="p-2.5">Time</th>
+                  <th class="p-2.5">Event</th>
+                  <th class="p-2.5">Technician</th>
+                  <th class="p-2.5">Trade / QR</th>
+                  <th class="p-2.5">Details</th>
+                </tr>
+              </thead>
+              <tbody id="activityLogsTbody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+          <p id="activityLogsEmpty" class="text-center text-xs text-slate-400 py-4 hidden">No matching activity logs found.</p>
+        </div>
+      </section>
+      <!-- === [BLOCK END: TELEMETRY_AND_TECH_TRACKER] === -->
+
+      <!-- === [BLOCK START: TRADES_AND_CATALOG_MANAGER] === -->
+      <section id="adminSectionTrades" class="space-y-4 hidden">
+        <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs space-y-4 text-xs">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div>
+              <h2 class="text-sm font-black text-slate-900">Trades &amp; BOQ Catalog Manager</h2>
+              <p class="text-[11px] text-slate-500">Trade chunein aur Items, Brands, Sizes ya Units add/remove karein — seedha Main App mein sync hoga.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <select id="adminTradeSelect" class="p-2 border-2 border-indigo-900 rounded-2xl bg-white font-black text-xs"></select>
+              <button id="saveCatalogPushBtn" type="button" class="bg-indigo-950 hover:bg-indigo-900 text-white font-black px-3.5 py-2 rounded-2xl shadow cursor-pointer shrink-0">
+                Push to Main App
+              </button>
+            </div>
+          </div>
+
+          <!-- Add New Trade -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col sm:flex-row gap-2">
+            <input id="newTradeNameInput" type="text" class="flex-1 p-2 border border-slate-300 rounded-xl bg-white" placeholder="Add new trade category (e.g. Solar & Inverter Tech)" />
+            <button id="addNewTradeBtn" type="button" class="bg-blue-800 hover:bg-blue-900 text-white font-black px-4 py-2 rounded-xl cursor-pointer shrink-0">
+              + Add Trade
+            </button>
+          </div>
+
+          <!-- Catalog Editors Grid: Items, Brands, Sizes, Units -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <!-- Items -->
+            <div class="border border-slate-200 rounded-2xl p-3 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="font-black text-slate-800">Materials / Items</span>
+                <span id="catalogItemsCount" class="text-[10px] font-bold bg-slate-100 px-2 py-0.5 rounded-full">0</span>
+              </div>
+              <div class="flex gap-1.5">
+                <input id="catalogNewItemInput" type="text" class="flex-1 p-2 border border-slate-300 rounded-xl" placeholder="New item name..." />
+                <button id="catalogAddItemBtn" type="button" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-3 rounded-xl cursor-pointer">+</button>
+              </div>
+              <div id="catalogItemsChips" class="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pt-1"></div>
+            </div>
+
+            <!-- Brands -->
+            <div class="border border-slate-200 rounded-2xl p-3 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="font-black text-slate-800">Brands</span>
+                <span id="catalogBrandsCount" class="text-[10px] font-bold bg-slate-100 px-2 py-0.5 rounded-full">0</span>
+              </div>
+              <div class="flex gap-1.5">
+                <input id="catalogNewBrandInput" type="text" class="flex-1 p-2 border border-slate-300 rounded-xl" placeholder="New brand name..." />
+                <button id="catalogAddBrandBtn" type="button" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-3 rounded-xl cursor-pointer">+</button>
+              </div>
+              <div id="catalogBrandsChips" class="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pt-1"></div>
+            </div>
+
+            <!-- Sizes -->
+            <div class="border border-slate-200 rounded-2xl p-3 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="font-black text-slate-800">Sizes / Specs</span>
+                <span id="catalogSizesCount" class="text-[10px] font-bold bg-slate-100 px-2 py-0.5 rounded-full">0</span>
+              </div>
+              <div class="flex gap-1.5">
+                <input id="catalogNewSizeInput" type="text" class="flex-1 p-2 border border-slate-300 rounded-xl" placeholder="New size (e.g. 1.5 inch)..." />
+                <button id="catalogAddSizeBtn" type="button" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-3 rounded-xl cursor-pointer">+</button>
+              </div>
+              <div id="catalogSizesChips" class="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pt-1"></div>
+            </div>
+
+            <!-- Units -->
+            <div class="border border-slate-200 rounded-2xl p-3 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="font-black text-slate-800">Units</span>
+                <span id="catalogUnitsCount" class="text-[10px] font-bold bg-slate-100 px-2 py-0.5 rounded-full">0</span>
+              </div>
+              <div class="flex gap-1.5">
+                <input id="catalogNewUnitInput" type="text" class="flex-1 p-2 border border-slate-300 rounded-xl" placeholder="New unit (e.g. SQ.FT, BAG)..." />
+                <button id="catalogAddUnitBtn" type="button" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-3 rounded-xl cursor-pointer">+</button>
+              </div>
+              <div id="catalogUnitsChips" class="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pt-1"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- === [BLOCK END: TRADES_AND_CATALOG_MANAGER] === -->
+
+      <!-- === [BLOCK START: ADS_AND_MEDIA_CONTROLLER] === -->
+      <section id="adminSectionAds" class="space-y-4 hidden text-xs">
+
+        <!-- 16:9 Banner Slider Controller -->
+        <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <h2 class="text-sm font-black text-slate-900">16:9 Featured Banner Slider</h2>
+              <p class="text-[11px] text-slate-500">Main app ke 16:9 banner slides add, edit, reorder aur delete karein.</p>
+            </div>
+            <button id="previewBannerSliderBtn" type="button" class="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-3 py-1.5 rounded-xl cursor-pointer">
+              Preview Banner
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+            <input id="newBannerTitleInput" type="text" class="p-2 border border-slate-300 rounded-xl bg-white" placeholder="Banner Caption / Title" />
+            <input id="newBannerImgInput" type="url" class="p-2 border border-slate-300 rounded-xl bg-white" placeholder="https://... 16:9 Image URL" />
+            <div class="flex gap-1.5">
+              <input id="newBannerLinkInput" type="url" class="flex-1 p-2 border border-slate-300 rounded-xl bg-white" placeholder="https:// Target Link" />
+              <button id="addBannerSlideBtn" type="button" class="bg-indigo-900 hover:bg-indigo-950 text-white font-black px-3 rounded-xl cursor-pointer shrink-0">+ Add</button>
+            </div>
+          </div>
+
+          <div id="bannerSlidesList" class="space-y-2"></div>
+        </div>
+
+        <!-- 1:1 Square Floating Ad + Full-Screen Popup Ad -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- 1:1 Square Floating Ad -->
+          <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs space-y-2.5">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-black text-slate-900">1:1 Square Floating Ad</h3>
+              <label class="inline-flex items-center gap-1.5 font-extrabold text-[11px] cursor-pointer">
+                <input id="squareAdEnabledToggle" type="checkbox" class="w-4 h-4 accent-emerald-600 cursor-pointer" />
+                <span>Enabled</span>
+              </label>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Badge Tag</label>
+                <input id="squareAdTagInput" type="text" maxlength="14" class="w-full p-2 border border-slate-300 rounded-xl" placeholder="DEAL" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Short Label</label>
+                <input id="squareAdLabelInput" type="text" maxlength="28" class="w-full p-2 border border-slate-300 rounded-xl" placeholder="Special Offer" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Square Image URL (1:1)</label>
+              <input id="squareAdImgInput" type="url" class="w-full p-2 border border-slate-300 rounded-xl" placeholder="https://..." />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Target Link URL</label>
+              <input id="squareAdLinkInput" type="url" class="w-full p-2 border border-slate-300 rounded-xl" placeholder="https://..." />
+            </div>
+            <div class="flex gap-2 pt-1">
+              <button id="previewSquareAdBtn" type="button" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2 rounded-xl cursor-pointer">Preview</button>
+              <button id="saveSquareAdBtn" type="button" class="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white font-black py-2 rounded-xl cursor-pointer">Save Square Ad</button>
+            </div>
+          </div>
+
+          <!-- Full-Screen Popup Ad -->
+          <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs space-y-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <h3 class="text-sm font-black text-slate-900">Full-Screen Popup Ad</h3>
+              <label class="inline-flex items-center gap-1.5 font-extrabold text-[11px] cursor-pointer">
+                <input id="popupAdEnabledToggle" type="checkbox" class="w-4 h-4 accent-amber-500 cursor-pointer" />
+                <span>Enabled</span>
+              </label>
+            </div>
+
+            <div class="flex gap-2">
+              <button id="triggerPopupNowBtn" type="button" class="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-2 px-3 rounded-xl cursor-pointer">
+                ⚡ Trigger Popup Now
+              </button>
+              <button id="previewPopupAdBtn" type="button" class="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2 px-3 rounded-xl cursor-pointer">
+                Preview
+              </button>
+            </div>
+
+            <div class="space-y-1.5 bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
+              <input id="newPopupCaptionInput" type="text" class="w-full p-1.5 border border-slate-300 rounded-xl bg-white" placeholder="Popup Offer Caption" />
+              <input id="newPopupImgInput" type="url" class="w-full p-1.5 border border-slate-300 rounded-xl bg-white" placeholder="Popup 16:9 Image URL" />
+              <div class="flex gap-1.5">
+                <input id="newPopupLinkInput" type="url" class="flex-1 p-1.5 border border-slate-300 rounded-xl bg-white" placeholder="Popup Target Link" />
+                <button id="addPopupSlideBtn" type="button" class="bg-indigo-900 hover:bg-indigo-950 text-white font-bold px-3 rounded-xl cursor-pointer">+ Slide</button>
+              </div>
+            </div>
+
+            <div id="popupSlidesList" class="space-y-1.5 max-h-36 overflow-y-auto"></div>
+          </div>
+        </div>
+      </section>
+      <!-- === [BLOCK END: ADS_AND_MEDIA_CONTROLLER] === -->
+
+      <!-- === [BLOCK START: BROADCAST_AND_APP_CONFIG] === -->
+      <section id="adminSectionBroadcast" class="space-y-4 hidden text-xs">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Live Broadcast Notification -->
+          <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs space-y-3">
+            <div>
+              <h2 class="text-sm font-black text-slate-900">Live Broadcast Notification</h2>
+              <p class="text-[11px] text-slate-500">Main app ke notification bell/modal mein live notice bhejein.</p>
+            </div>
+            <textarea id="broadcastMessageTextarea" rows="3" class="w-full p-2.5 border border-slate-300 rounded-2xl bg-slate-50 focus:bg-white" placeholder="Enter broadcast notice for technicians..."></textarea>
+            <div class="flex items-center justify-between gap-2">
+              <label class="inline-flex items-center gap-1.5 font-bold text-[11px] cursor-pointer">
+                <input id="broadcastBadgeToggle" type="checkbox" checked class="w-4 h-4 accent-red-600 cursor-pointer" />
+                <span>Show Red Bell Badge</span>
+              </label>
+              <div class="flex gap-1.5">
+                <button id="previewBroadcastBtn" type="button" class="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-3 py-2 rounded-xl cursor-pointer">Preview</button>
+                <button id="pushBroadcastBtn" type="button" class="bg-red-600 hover:bg-red-700 text-white font-black px-3.5 py-2 rounded-xl shadow cursor-pointer">Push Live Notice</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Official YouTube & App Config -->
+          <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs space-y-3">
+            <div>
+              <h2 class="text-sm font-black text-slate-900">App &amp; YouTube Channel Config</h2>
+              <p class="text-[11px] text-slate-500">Main app ka official YouTube channel link &amp; brand title update karein.</p>
+            </div>
+            <div>
+              <label for="configYoutubeUrlInput" class="block text-[10px] font-bold text-slate-600 mb-1">Official YouTube Channel URL</label>
+              <input id="configYoutubeUrlInput" type="url" class="w-full p-2.5 border border-slate-300 rounded-2xl" placeholder="https://www.youtube.com/@sulemanplumbing" />
+            </div>
+            <div>
+              <label for="configDefaultBrandInput" class="block text-[10px] font-bold text-slate-600 mb-1">Default Brand / Header Title</label>
+              <input id="configDefaultBrandInput" type="text" class="w-full p-2.5 border border-slate-300 rounded-2xl" placeholder="POWER PLUM" />
+            </div>
+            <button id="saveAppConfigBtn" type="button" class="w-full bg-indigo-950 hover:bg-indigo-900 text-white font-black py-2.5 rounded-2xl shadow cursor-pointer">
+              Save &amp; Sync App Config
+            </button>
+          </div>
+        </div>
+
+        <!-- Google Sheets / Apps Script Integration Card -->
+        <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 class="text-sm font-black text-slate-900">Google Sheets / Apps Script Sync Endpoint</h2>
+              <p class="text-[11px] text-slate-500">Telemetry &amp; ledger records ko Google Sheet mein bhejne ke liye Web App URL save karein.</p>
+            </div>
+            <button id="copyAdminAppsScriptBtn" type="button" class="self-start sm:self-auto bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[11px] px-3 py-1.5 rounded-xl cursor-pointer">
+              Copy Apps Script
+            </button>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input id="adminSheetsUrlInput" type="url" class="flex-1 p-2.5 border border-slate-300 rounded-2xl" placeholder="https://script.google.com/macros/s/.../exec" />
+            <button id="saveAdminSheetsUrlBtn" type="button" class="bg-blue-900 hover:bg-blue-950 text-white font-black px-4 py-2.5 rounded-2xl cursor-pointer shrink-0">
+              Save Endpoint
+            </button>
+          </div>
+
+          <pre id="adminAppsScriptTemplate" class="bg-slate-950 text-emerald-300 p-3 rounded-2xl text-[11px] overflow-x-auto leading-relaxed">function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var payload = JSON.parse(e.postData.contents);
+  sheet.appendRow([
+    new Date().toISOString(),
+    payload.type || "event",
+    payload.qrId || "",
+    payload.technician ? payload.technician.name : "",
+    payload.technician ? payload.technician.mobile : "",
+    payload.trade || "",
+    JSON.stringify(payload.meta || {})
+  ]);
+  return ContentService.createTextOutput('{"status":"ok"}')
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+        </div>
+      </section>
+      <!-- === [BLOCK END: BROADCAST_AND_APP_CONFIG] === -->
+
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Navigation Bar -->
+  <nav class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-slate-200 px-2 py-1.5 grid grid-cols-4 gap-1 text-[10px] font-extrabold shadow-2xl">
+    <button type="button" data-admin-tab="telemetry" class="mobile-nav-btn py-1.5 rounded-xl bg-indigo-950 text-white cursor-pointer">Logs</button>
+    <button type="button" data-admin-tab="trades" class="mobile-nav-btn py-1.5 rounded-xl text-slate-600 cursor-pointer">Trades</button>
+    <button type="button" data-admin-tab="ads" class="mobile-nav-btn py-1.5 rounded-xl text-slate-600 cursor-pointer">Ads</button>
+    <button type="button" data-admin-tab="broadcast" class="mobile-nav-btn py-1.5 rounded-xl text-slate-600 cursor-pointer">Live</button>
+  </nav>
+
+  <script>
+  (() => {
+    "use strict";
+
+    /* =====================================================================
+       SHARED HELPERS, SYNC CHANNEL & DEFAULT SEED DATA
+       ===================================================================== */
+    const CHANNEL_NAME = "power_plum_live_sync_v1";
+    const KEYS = {
+      ADMIN_PIN: "powerPlum_admin_pin_v1",
+      ADMIN_UNLOCKED: "powerPlum_admin_unlocked_session_v1",
+      TELEMETRY: "powerplum_telemetry_log_v1",
+      LEGACY_LOGS: "powerPlumLogs",
+      TECH_REGISTRY: "powerPlumTechRegistry",
+      AD_CLICKS: "powerPlumAdClickCounts",
+      PROFILE: "powerPlum_partner_profile_v2",
+      MASTER_DB: "powerPlumMasterDb",
+      CUSTOM_DB: "powerPlum_custom_trade_db_v2",
+      BANNERS: "powerPlumFeaturedBanners",
+      SQUARE_AD: "powerPlumSquareAdConfig",
+      POPUP_ADS: "powerPlumPopupAdsConfig",
+      TRIGGER_POPUP: "powerPlumTriggerPopupNow",
+      NOTIF_TEXT: "powerPlumActiveNotif",
+      NOTIF_BADGE: "powerPlumActiveNotifBadge",
+      YOUTUBE_URL: "powerPlumYoutubeChannelUrl",
+      SHEETS_WEBHOOK: "powerplum_sheets_webhook_v2"
+    };
+
+    const DEFAULT_SEED_CATALOG = {
+      "Plumber": {
+        items: ["CPVC Pipe (SDR 11)", "CPVC Elbow 90°", "CPVC Brass Elbow", "CPVC Ball Valve", "UPVC Pipe (Sch 40)", "SWR Nahani Trap", "Angle Valve", "Bib Cock", "Wall Mixer", "Diverter Body", "EWC Commode", "Solvent Cement", "Teflon Tape"],
+        brands: ["Astral", "Prince", "Ashirvad", "Finolex", "Supreme", "Jaquar", "Hindware", "Cera", "Sintex"],
+        sizes: ["1/2 inch (15mm)", "3/4 inch (20mm)", "1 inch (25mm)", "1.5 inch (40mm)", "2 inch (50mm)", "4 inch (110mm)", "10 ft Length", "500 L Tank", "1000 L Tank"],
+        units: ["PCS", "LENGTH (10 ft)", "SET", "KG", "ROLL", "BOTTLE", "BAG"]
+      },
+      "Tile & Marble Mason": {
+        items: ["Vitrified Floor Tile (GVT/PGVT)", "Ceramic Wall Tile", "Double Charge Tile", "Italian Marble Slab", "Granite Slab", "Tile Adhesive (Grey)", "Epoxy Grout", "Tile Spacer"],
+        brands: ["Kajaria", "Somany", "Johnson", "Nitco", "MYK Laticrete", "Roff"],
+        sizes: ["600x600 mm", "800x800 mm", "1200x600 mm", "300x450 mm", "20 kg Bag", "25 kg Bag", "17 mm Slab"],
+        units: ["SQ.FT", "BOX", "BAG", "PCS"]
+      },
+      "POP & Gypsum Ceiling": {
+        items: ["POP Bag (Plaster of Paris)", "Gypsum Board (12.5mm)", "GI Ceiling Channel", "GI Perimeter Channel", "Drywall Screw", "Joint Tape", "Corner Bead"],
+        brands: ["Saint-Gobain Gyproc", "USG Boral", "JK Lakshmi", "Birla White", "Sakarni"],
+        sizes: ["25 kg Bag", "6x4 ft (12.5mm)", "8x4 ft (12.5mm)", "1200 mm", "2400 mm", "25 mm Screw"],
+        units: ["BAG", "SHEET", "LENGTH (10 ft)", "BOX", "ROLL"]
+      },
+      "Electrician": {
+        items: ["FR PVC Wire Coil", "MCB", "RCCB / ELCB", "Distribution Box (DB)", "Modular Switch", "Modular Socket", "PVC Conduit Pipe", "LED Concealed Light", "Ceiling Fan"],
+        brands: ["Polycab", "Havells", "Finolex", "KEI", "Anchor Roma", "Legrand", "Schneider", "Bajaj"],
+        sizes: ["1.0 sq mm", "1.5 sq mm", "2.5 sq mm", "4.0 sq mm", "6 Amp", "16 Amp", "4 Module", "8 Module", "15W"],
+        units: ["COIL", "PCS", "LENGTH (10 ft)", "BOX"]
+      }
+    };
+
+    const DEFAULT_SEED_BANNERS = [
+      {
+        title: "Power Plum Quality Tested Tools & BOQ Builder",
+        img: "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=1200&auto=format&fit=crop&q=80",
+        link: "https://www.youtube.com/@sulemanplumbing"
+      },
+      {
+        title: "Generate QR-Tagged BOQ PDFs in Seconds",
+        img: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=1200&auto=format&fit=crop&q=80",
+        link: "https://www.youtube.com/@sulemanplumbing"
+      }
+    ];
+
+    const DEFAULT_SEED_SQUARE_AD = {
+      enabled: true,
+      tag: "DEAL",
+      label: "BOQ & QR Ready",
+      img: "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=400&auto=format&fit=crop&q=80",
+      link: "https://www.youtube.com/@sulemanplumbing"
+    };
+
+    const DEFAULT_SEED_POPUP_ADS = [
+      {
+        caption: "Power Plum Partner Offer — Fast Multi-Trade BOQ & QR Tracking",
+        img: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=1200&auto=format&fit=crop&q=80",
+        link: "https://www.youtube.com/@sulemanplumbing"
+      }
+    ];
+
+    const DEFAULT_SEED_LOGS = [
+      {
+        id: "SEED-LOG-1",
+        type: "app_opened",
+        timestamp: new Date().toISOString(),
+        qrId: "PP-QR-410290",
+        technician: { name: "Ramesh Plumber", mobile: "9811223344", company: "POWER PLUM", address: "Delhi" },
+        trade: "Plumber",
+        itemCount: 4,
+        meta: { seed: true }
+      }
+    ];
+
+    let syncChannel = null;
+    try {
+      if ("BroadcastChannel" in window) {
+        syncChannel = new BroadcastChannel(CHANNEL_NAME);
+      }
+    } catch (e) {
+      syncChannel = null;
+    }
+
+    function broadcastToMainApp(eventType, payload = {}) {
+      try {
+        if (syncChannel) {
+          syncChannel.postMessage({ type: eventType, payload, ts: Date.now() });
+        }
+      } catch (e) {}
+    }
+
+    function sanitizeText(val, maxLen = 220) {
+      return String(val ?? "").replace(/[<>]/g, "").trim().slice(0, maxLen);
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? "").replace(/[&<>"']/g, (m) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[m]));
+    }
+
+    function readJson(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    function writeJson(key, val) {
+      try {
+        localStorage.setItem(key, JSON.stringify(val));
+      } catch (e) {
+        showToast("Storage write error — check browser storage quota.");
+      }
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById("adminToast");
+      if (!el) return;
+      el.textContent = msg;
+      el.classList.remove("hidden");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => el.classList.add("hidden"), 2800);
+    }
+
+    function openPreviewModal(title, htmlContent) {
+      document.getElementById("previewModalTitle").textContent = title;
+      document.getElementById("previewModalBody").innerHTML = htmlContent;
+      document.getElementById("adminPreviewModal").classList.remove("hidden");
+    }
+
+    document.getElementById("closePreviewModalBtn").addEventListener("click", () => {
+      document.getElementById("adminPreviewModal").classList.add("hidden");
+    });
+
+    /* === [BLOCK START: ADMIN_CORE_AND_SYNC_BRIDGE] === */
+    function getStoredAdminPin() {
+      return localStorage.getItem(KEYS.ADMIN_PIN) || "1234";
+    }
+
+    function checkAdminPinGate() {
+      const unlocked = sessionStorage.getItem(KEYS.ADMIN_UNLOCKED) === "1";
+      const overlay = document.getElementById("adminPinOverlay");
+      if (!unlocked) {
+        document.getElementById("adminPinInput").value = "";
+        document.getElementById("adminPinError").classList.add("hidden");
+        overlay.classList.remove("hidden");
+      } else {
+        overlay.classList.add("hidden");
+      }
+    }
+
+    document.getElementById("adminPinUnlockBtn").addEventListener("click", () => {
+      const entered = sanitizeText(document.getElementById("adminPinInput").value, 20);
+      if (entered === getStoredAdminPin()) {
+        sessionStorage.setItem(KEYS.ADMIN_UNLOCKED, "1");
+        document.getElementById("adminPinOverlay").classList.add("hidden");
+        showToast("Admin Panel unlocked.");
+      } else {
+        document.getElementById("adminPinError").classList.remove("hidden");
+      }
+    });
+
+    document.getElementById("adminPinInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("adminPinUnlockBtn").click();
+    });
+
+    document.getElementById("lockAdminPinBtn").addEventListener("click", () => {
+      sessionStorage.removeItem(KEYS.ADMIN_UNLOCKED);
+      checkAdminPinGate();
+      showToast("Admin Panel locked.");
+    });
+
+    document.getElementById("saveNewAdminPinBtn").addEventListener("click", () => {
+      const nextPin = sanitizeText(document.getElementById("newAdminPinInput").value, 10);
+      if (nextPin.length < 4) {
+        showToast("PIN kam se kam 4 digits/characters ka rakhein.");
+        return;
+      }
+      localStorage.setItem(KEYS.ADMIN_PIN, nextPin);
+      document.getElementById("newAdminPinInput").value = "";
+      showToast("New Admin PIN saved!");
+    });
+
+    // Tab Navigation (Desktop Sidebar + Mobile Bottom Nav)
+    function switchAdminTab(tabKey) {
+      const sections = {
+        telemetry: document.getElementById("adminSectionTelemetry"),
+        trades: document.getElementById("adminSectionTrades"),
+        ads: document.getElementById("adminSectionAds"),
+        broadcast: document.getElementById("adminSectionBroadcast")
+      };
+      Object.entries(sections).forEach(([k, el]) => {
+        if (el) el.classList.toggle("hidden", k !== tabKey);
+      });
+
+      document.querySelectorAll(".admin-nav-btn").forEach((btn) => {
+        const active = btn.getAttribute("data-admin-tab") === tabKey;
+        btn.className = active
+          ? "admin-nav-btn w-full text-left px-3 py-2.5 rounded-2xl font-black bg-indigo-950 text-white flex items-center justify-between cursor-pointer"
+          : "admin-nav-btn w-full text-left px-3 py-2.5 rounded-2xl font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-between cursor-pointer";
+      });
+
+      document.querySelectorAll(".mobile-nav-btn").forEach((btn) => {
+        const active = btn.getAttribute("data-admin-tab") === tabKey;
+        btn.className = active
+          ? "mobile-nav-btn py-1.5 rounded-xl bg-indigo-950 text-white cursor-pointer"
+          : "mobile-nav-btn py-1.5 rounded-xl text-slate-600 cursor-pointer";
+      });
+
+      // Close mobile drawer if open
+      document.getElementById("adminSidebar").classList.add("-translate-x-full");
+      document.getElementById("adminSidebarBackdrop").classList.add("hidden");
+    }
+
+    document.querySelectorAll("[data-admin-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => switchAdminTab(btn.getAttribute("data-admin-tab")));
+    });
+
+    document.getElementById("adminSidebarToggleBtn").addEventListener("click", () => {
+      document.getElementById("adminSidebar").classList.remove("-translate-x-full");
+      document.getElementById("adminSidebarBackdrop").classList.remove("hidden");
+    });
+    document.getElementById("closeAdminSidebarBtn").addEventListener("click", () => {
+      document.getElementById("adminSidebar").classList.add("-translate-x-full");
+      document.getElementById("adminSidebarBackdrop").classList.add("hidden");
+    });
+    document.getElementById("adminSidebarBackdrop").addEventListener("click", () => {
+      document.getElementById("adminSidebar").classList.add("-translate-x-full");
+      document.getElementById("adminSidebarBackdrop").classList.add("hidden");
+    });
+
+    // Backup & Restore JSON / CSV
+    document.getElementById("exportAdminJsonBtn").addEventListener("click", () => {
+      const bundle = {
+        exportedAt: new Date().toISOString(),
+        telemetry: readJson(KEYS.TELEMETRY, []),
+        catalog: getMasterCatalogState(),
+        banners: readJson(KEYS.BANNERS, DEFAULT_SEED_BANNERS),
+        squareAd: readJson(KEYS.SQUARE_AD, DEFAULT_SEED_SQUARE_AD),
+        popupAds: readJson(KEYS.POPUP_ADS, DEFAULT_SEED_POPUP_ADS),
+        broadcast: localStorage.getItem(KEYS.NOTIF_TEXT) || "",
+        youtubeUrl: localStorage.getItem(KEYS.YOUTUBE_URL) || ""
+      };
+      const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `PowerPlum_Admin_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast("Admin JSON backup exported.");
+    });
+
+    document.getElementById("exportAdminCsvBtn").addEventListener("click", () => {
+      const logs = collectUnifiedTelemetryLogs();
+      const esc = (v) => '"' + String(v ?? "").replace(/"/g, '""') + '"';
+      const lines = [["Timestamp", "Event", "QR ID", "Tech Name", "Tech Mobile", "Trade", "Details"].map(esc).join(",")];
+      logs.forEach((l) => {
+        lines.push([
+          l.timestamp, l.type, l.qrId || "",
+          l.technician?.name || "", l.technician?.mobile || "",
+          l.trade || "", JSON.stringify(l.meta || {})
+        ].map(esc).join(","));
+      });
+      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `PowerPlum_Telemetry_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast("Telemetry CSV exported.");
+    });
+
+    document.getElementById("importAdminJsonInput").addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (Array.isArray(data.telemetry)) writeJson(KEYS.TELEMETRY, data.telemetry);
+          if (data.catalog && typeof data.catalog === "object") writeJson(KEYS.MASTER_DB, data.catalog);
+          if (Array.isArray(data.banners)) writeJson(KEYS.BANNERS, data.banners);
+          if (data.squareAd) writeJson(KEYS.SQUARE_AD, data.squareAd);
+          if (Array.isArray(data.popupAds)) writeJson(KEYS.POPUP_ADS, data.popupAds);
+          if (typeof data.broadcast === "string") localStorage.setItem(KEYS.NOTIF_TEXT, data.broadcast);
+          if (typeof data.youtubeUrl === "string") localStorage.setItem(KEYS.YOUTUBE_URL, data.youtubeUrl);
+          broadcastToMainApp("full_state_restored", {});
+          refreshAdminDashboard();
+          showToast("Admin backup restored & synced!");
+        } catch (err) {
+          showToast("Invalid JSON backup file.");
+        } finally {
+          e.target.value = "";
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    function pulseSyncIndicator(labelText = "Live Sync") {
+      const lbl = document.getElementById("liveSyncLabel");
+      if (lbl) lbl.textContent = labelText;
+      setTimeout(() => {
+        if (lbl) lbl.textContent = "Live Sync Active";
+      }, 1500);
+    }
+
+    if (syncChannel) {
+      syncChannel.onmessage = () => {
+        pulseSyncIndicator("Synced Just Now");
+        refreshAdminDashboard();
+      };
+    }
+
+    window.addEventListener("storage", () => {
+      pulseSyncIndicator("Storage Updated");
+      refreshAdminDashboard();
+    });
+
+    document.getElementById("forceSyncNowBtn").addEventListener("click", () => {
+      pulseSyncIndicator("Refreshed");
+      refreshAdminDashboard();
+      showToast("Data refreshed from storage.");
+    });
+    /* === [BLOCK END: ADMIN_CORE_AND_SYNC_BRIDGE] === */
+
+    /* === [BLOCK START: TELEMETRY_AND_TECH_TRACKER] === */
+    function ensureSeedTelemetryIfEmpty() {
+      const primary = readJson(KEYS.TELEMETRY, null);
+      const legacy = readJson(KEYS.LEGACY_LOGS, null);
+      if ((!Array.isArray(primary) || primary.length === 0) && (!Array.isArray(legacy) || legacy.length === 0)) {
+        writeJson(KEYS.TELEMETRY, DEFAULT_SEED_LOGS);
+      }
+    }
+
+    function collectUnifiedTelemetryLogs() {
+      const primary = readJson(KEYS.TELEMETRY, []);
+      const legacy = readJson(KEYS.LEGACY_LOGS, []);
+      const normalizedLegacy = Array.isArray(legacy) ? legacy.map((item, idx) => ({
+        id: item.id || `LEG-${idx}`,
+        type: item.type || item.event || "app_opened",
+        timestamp: item.timestamp || item.time || new Date().toISOString(),
+        qrId: item.qrId || "",
+        technician: {
+          name: item.techName || item.name || "Technician",
+          mobile: item.techMobile || item.mobile || "",
+          company: item.company || "POWER PLUM",
+          address: item.address || ""
+        },
+        trade: item.trade || "Plumber",
+        itemCount: Number(item.itemCount || 0),
+        meta: item.meta || {}
+      })) : [];
+
+      const merged = [...(Array.isArray(primary) ? primary : []), ...normalizedLegacy];
+      return merged.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+    }
+
+    function renderTelemetryAndTechs() {
+      const logs = collectUnifiedTelemetryLogs();
+      const registry = readJson(KEYS.TECH_REGISTRY, []);
+      const adClickCounts = readJson(KEYS.AD_CLICKS, {});
+      const profile = readJson(KEYS.PROFILE, null);
+
+      const pdfCount = logs.filter((l) => l.type === "pdf_generated").length;
+      const waCount = logs.filter((l) => l.type === "whatsapp_shared").length;
+      const logAdClicks = logs.filter((l) => l.type === "ad_clicked").length;
+      const mapAdClicks = Object.values(adClickCounts || {}).reduce((s, n) => s + Number(n || 0), 0);
+      const totalAdClicks = Math.max(logAdClicks, mapAdClicks);
+
+      // Build technician map from registry, profile, and logs
+      const techMap = new Map();
+      const addTechEntry = (name, mobile, tradeOrShop) => {
+        const cleanName = sanitizeText(name, 80);
+        const cleanMob = sanitizeText(mobile, 20);
+        if (!cleanName && !cleanMob) return;
+        const key = `${cleanMob}|${cleanName.toLowerCase()}`;
+        if (!techMap.has(key)) {
+          techMap.set(key, {
+            name: cleanName || "Partner Technician",
+            mobile: cleanMob || "-",
+            tradeOrShop: sanitizeText(tradeOrShop, 80) || "POWER PLUM",
+            pdfs: 0,
+            wa: 0,
+            adClicks: 0
+          });
+        }
+        return techMap.get(key);
+      };
+
+      if (Array.isArray(registry)) {
+        registry.forEach((t) => addTechEntry(t.name, t.mobile, t.trade || t.company));
+      }
+      if (profile && (profile.name || profile.mobile)) {
+        addTechEntry(profile.name, profile.mobile, profile.badges || profile.company);
+      }
+
+      logs.forEach((l) => {
+        const tName = l.technician?.name || "";
+        const tMob = l.technician?.mobile || "";
+        const entry = addTechEntry(tName, tMob, l.trade || l.technician?.company);
+        if (entry) {
+          if (l.type === "pdf_generated") entry.pdfs += 1;
+          if (l.type === "whatsapp_shared") entry.wa += 1;
+          if (l.type === "ad_clicked") entry.adClicks += 1;
+        }
+      });
+
+      const techList = Array.from(techMap.values());
+      document.getElementById("kpiTotalPdfs").textContent = String(pdfCount);
+      document.getElementById("kpiTotalWhatsApp").textContent = String(waCount);
+      document.getElementById("kpiTotalAdClicks").textContent = String(totalAdClicks);
+      document.getElementById("kpiRegisteredTechs").textContent = String(techList.length);
+      document.getElementById("techCountBadge").textContent = `${techList.length} Technicians`;
+
+      const techTbody = document.getElementById("registeredTechTbody");
+      if (!techList.length) {
+        techTbody.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-slate-400">No registered technicians yet.</td></tr>';
+      } else {
+        techTbody.innerHTML = techList.map((t) =>
+          "<tr class='hover:bg-slate-50'>" +
+            "<td class='p-2.5 font-bold text-slate-900'>" + escapeHtml(t.name) + "</td>" +
+            "<td class='p-2.5 font-mono text-[11px] text-slate-600'>" + escapeHtml(t.mobile) + "</td>" +
+            "<td class='p-2.5 text-slate-700'>" + escapeHtml(t.tradeOrShop) + "</td>" +
+            "<td class='p-2.5 text-center font-black text-indigo-900'>" + t.pdfs + "</td>" +
+            "<td class='p-2.5 text-center font-black text-emerald-700'>" + t.wa + "</td>" +
+            "<td class='p-2.5 text-center font-black text-amber-700'>" + t.adClicks + "</td>" +
+          "</tr>"
+        ).join("");
+      }
+
+      // Filter activity logs
+      const q = sanitizeText(document.getElementById("logSearchInput")?.value || "", 90).toLowerCase();
+      const evFilter = document.getElementById("logEventFilter")?.value || "ALL";
+      const filteredLogs = logs.filter((l) => {
+        if (evFilter !== "ALL" && l.type !== evFilter) return false;
+        if (!q) return true;
+        const hay = `${l.type || ""} ${l.qrId || ""} ${l.trade || ""} ${l.technician?.name || ""} ${l.technician?.mobile || ""} ${JSON.stringify(l.meta || {})}`.toLowerCase();
+        return hay.includes(q);
+      }).slice(0, 120);
+
+      const logsTbody = document.getElementById("activityLogsTbody");
+      const logsEmpty = document.getElementById("activityLogsEmpty");
+      if (!filteredLogs.length) {
+        logsTbody.innerHTML = "";
+        logsEmpty.classList.remove("hidden");
+      } else {
+        logsEmpty.classList.add("hidden");
+        logsTbody.innerHTML = filteredLogs.map((l) => {
+          const dt = l.timestamp ? new Date(l.timestamp).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "-";
+          const detailText = l.meta?.adId
+            ? `Ad: ${l.meta.adId}`
+            : l.meta?.fileName
+              ? `File: ${l.meta.fileName}`
+              : `${l.itemCount || 0} items`;
+          return "<tr class='hover:bg-slate-50'>" +
+            "<td class='p-2.5 text-[11px] text-slate-500 whitespace-nowrap'>" + escapeHtml(dt) + "</td>" +
+            "<td class='p-2.5'><span class='inline-block bg-indigo-50 text-indigo-950 border border-indigo-200 text-[10px] font-black px-2 py-0.5 rounded-full'>" + escapeHtml(l.type || "event") + "</span></td>" +
+            "<td class='p-2.5 font-bold text-slate-800'>" + escapeHtml(l.technician?.name || "Partner") + " <span class='text-[10px] font-normal text-slate-500'>" + escapeHtml(l.technician?.mobile || "") + "</span></td>" +
+            "<td class='p-2.5 text-[11px] font-mono text-slate-700'>" + escapeHtml(l.trade || "-") + (l.qrId ? " • " + escapeHtml(l.qrId) : "") + "</td>" +
+            "<td class='p-2.5 text-[11px] text-slate-600'>" + escapeHtml(detailText) + "</td>" +
+          "</tr>";
+        }).join("");
+      }
+    }
+
+    document.getElementById("logSearchInput").addEventListener("input", renderTelemetryAndTechs);
+    document.getElementById("logEventFilter").addEventListener("change", renderTelemetryAndTechs);
+    document.getElementById("clearTelemetryLogsBtn").addEventListener("click", () => {
+      writeJson(KEYS.TELEMETRY, []);
+      writeJson(KEYS.LEGACY_LOGS, []);
+      renderTelemetryAndTechs();
+      showToast("Telemetry logs cleared.");
+    });
+    /* === [BLOCK END: TELEMETRY_AND_TECH_TRACKER] === */
+
+    /* === [BLOCK START: TRADES_AND_CATALOG_MANAGER] === */
+    function getMasterCatalogState() {
+      const saved = readJson(KEYS.MASTER_DB, null);
+      if (saved && typeof saved === "object" && Object.keys(saved).length > 0) {
+        return saved;
+      }
+      writeJson(KEYS.MASTER_DB, DEFAULT_SEED_CATALOG);
+      return JSON.parse(JSON.stringify(DEFAULT_SEED_CATALOG));
+    }
+
+    function getActiveAdminTradeName() {
+      const cat = getMasterCatalogState();
+      const sel = document.getElementById("adminTradeSelect");
+      const current = sel?.value;
+      if (current && cat[current]) return current;
+      const firstKey = Object.keys(cat)[0] || "Plumber";
+      return firstKey;
+    }
+
+    function renderCatalogManager() {
+      const cat = getMasterCatalogState();
+      const tradeNames = Object.keys(cat);
+      const sel = document.getElementById("adminTradeSelect");
+      const prevVal = sel.value && cat[sel.value] ? sel.value : (tradeNames[0] || "Plumber");
+
+      sel.innerHTML = tradeNames.map((t) =>
+        '<option value="' + escapeHtml(t) + '">' + escapeHtml(t) + "</option>"
+      ).join("");
+      sel.value = prevVal;
+
+      const entry = cat[prevVal] || { items: [], brands: [], sizes: [], units: [] };
+      document.getElementById("catalogItemsCount").textContent = String((entry.items || []).length);
+      document.getElementById("catalogBrandsCount").textContent = String((entry.brands || []).length);
+      document.getElementById("catalogSizesCount").textContent = String((entry.sizes || []).length);
+      document.getElementById("catalogUnitsCount").textContent = String((entry.units || []).length);
+
+      const renderChips = (containerId, list, fieldKey) => {
+        const box = document.getElementById(containerId);
+        box.innerHTML = (list || []).map((val, idx) =>
+          '<span class="inline-flex items-center gap-1 bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-semibold px-2 py-0.5 rounded-full">' +
+            '<span>' + escapeHtml(val) + "</span>" +
+            '<button type="button" data-rm-field="' + fieldKey + '" data-rm-idx="' + idx + '" class="text-red-600 hover:text-red-800 font-black cursor-pointer">×</button>' +
+          "</span>"
+        ).join("");
+
+        box.querySelectorAll("[data-rm-field]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const f = btn.getAttribute("data-rm-field");
+            const i = Number(btn.getAttribute("data-rm-idx"));
+            const db = getMasterCatalogState();
+            const tr = getActiveAdminTradeName();
+            if (Array.isArray(db[tr]?.[f])) {
+              db[tr][f].splice(i, 1);
+              writeJson(KEYS.MASTER_DB, db);
+              renderCatalogManager();
+            }
+          });
+        });
+      };
+
+      renderChips("catalogItemsChips", entry.items, "items");
+      renderChips("catalogBrandsChips", entry.brands, "brands");
+      renderChips("catalogSizesChips", entry.sizes, "sizes");
+      renderChips("catalogUnitsChips", entry.units, "units");
+    }
+
+    document.getElementById("adminTradeSelect").addEventListener("change", renderCatalogManager);
+
+    document.getElementById("addNewTradeBtn").addEventListener("click", () => {
+      const name = sanitizeText(document.getElementById("newTradeNameInput").value, 60);
+      if (!name) {
+        showToast("Trade ka naam likhein.");
+        return;
+      }
+      const db = getMasterCatalogState();
+      if (!db[name]) {
+        db[name] = {
+          items: ["Standard Material Item"],
+          brands: ["Generic", "Standard"],
+          sizes: ["Standard", "1 inch", "8x4 ft"],
+          units: ["PCS", "BAG", "SQ.FT"]
+        };
+        writeJson(KEYS.MASTER_DB, db);
+      }
+      document.getElementById("newTradeNameInput").value = "";
+      document.getElementById("adminTradeSelect").value = name;
+      renderCatalogManager();
+      showToast(`Trade "${name}" added.`);
+    });
+
+    function addCatalogEntry(fieldKey, inputId) {
+      const inp = document.getElementById(inputId);
+      const val = sanitizeText(inp.value, 90);
+      if (!val) return;
+      const db = getMasterCatalogState();
+      const tr = getActiveAdminTradeName();
+      db[tr] = db[tr] || { items: [], brands: [], sizes: [], units: [] };
+      db[tr][fieldKey] = db[tr][fieldKey] || [];
+      if (!db[tr][fieldKey].includes(val)) {
+        db[tr][fieldKey].unshift(val);
+      }
+      writeJson(KEYS.MASTER_DB, db);
+      inp.value = "";
+      renderCatalogManager();
+    }
+
+    document.getElementById("catalogAddItemBtn").addEventListener("click", () => addCatalogEntry("items", "catalogNewItemInput"));
+    document.getElementById("catalogAddBrandBtn").addEventListener("click", () => addCatalogEntry("brands", "catalogNewBrandInput"));
+    document.getElementById("catalogAddSizeBtn").addEventListener("click", () => addCatalogEntry("sizes", "catalogNewSizeInput"));
+    document.getElementById("catalogAddUnitBtn").addEventListener("click", () => addCatalogEntry("units", "catalogNewUnitInput"));
+
+    document.getElementById("saveCatalogPushBtn").addEventListener("click", () => {
+      const db = getMasterCatalogState();
+      // Mirror into custom trade DB key so mainapp.html picks up custom items/brands/sizes/units immediately
+      const mirrored = {};
+      Object.entries(db).forEach(([tr, obj]) => {
+        mirrored[tr] = {
+          items: obj.items || [],
+          brands: obj.brands || [],
+          sizes1: obj.sizes || [],
+          sizes2: ["None", "Standard", "Heavy Duty", "CUSTOM"],
+          units: obj.units || []
+        };
+      });
+      writeJson(KEYS.MASTER_DB, db);
+      writeJson(KEYS.CUSTOM_DB, mirrored);
+      broadcastToMainApp("catalog_updated", { tradesCount: Object.keys(db).length });
+      showToast("Trades & Catalog pushed to Main App!");
+    });
+    /* === [BLOCK END: TRADES_AND_CATALOG_MANAGER] === */
+
+    /* === [BLOCK START: ADS_AND_MEDIA_CONTROLLER] === */
+    function getBannersState() {
+      const b = readJson(KEYS.BANNERS, null);
+      if (Array.isArray(b) && b.length > 0) return b;
+      writeJson(KEYS.BANNERS, DEFAULT_SEED_BANNERS);
+      return JSON.parse(JSON.stringify(DEFAULT_SEED_BANNERS));
+    }
+
+    function getSquareAdState() {
+      const s = readJson(KEYS.SQUARE_AD, null);
+      if (s && typeof s === "object") return s;
+      writeJson(KEYS.SQUARE_AD, DEFAULT_SEED_SQUARE_AD);
+      return { ...DEFAULT_SEED_SQUARE_AD };
+    }
+
+    function getPopupAdsState() {
+      const p = readJson(KEYS.POPUP_ADS, null);
+      if (Array.isArray(p) && p.length > 0) return p;
+      writeJson(KEYS.POPUP_ADS, DEFAULT_SEED_POPUP_ADS);
+      return JSON.parse(JSON.stringify(DEFAULT_SEED_POPUP_ADS));
+    }
+
+    function renderAdsController() {
+      // 16:9 Banners
+      const banners = getBannersState();
+      const bList = document.getElementById("bannerSlidesList");
+      bList.innerHTML = banners.map((sl, idx) =>
+        "<div class='flex items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-2xl p-2.5'>" +
+          "<div class='min-w-0'>" +
+            "<p class='font-black text-slate-900 truncate'>" + (idx + 1) + ". " + escapeHtml(sl.title || "Banner") + "</p>" +
+            "<p class='text-[10px] text-slate-500 truncate'>" + escapeHtml(sl.link || "") + "</p>" +
+          "</div>" +
+          "<div class='flex items-center gap-1 shrink-0'>" +
+            "<button type='button' data-b-up='" + idx + "' class='px-2 py-1 rounded-lg bg-white border text-[10px] font-bold cursor-pointer'>↑</button>" +
+            "<button type='button' data-b-dn='" + idx + "' class='px-2 py-1 rounded-lg bg-white border text-[10px] font-bold cursor-pointer'>↓</button>" +
+            "<button type='button' data-b-del='" + idx + "' class='px-2 py-1 rounded-lg bg-red-50 text-red-700 border border-red-200 text-[10px] font-bold cursor-pointer'>✕</button>" +
+          "</div>" +
+        "</div>"
+      ).join("");
+
+      bList.querySelectorAll("[data-b-up]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const i = Number(btn.getAttribute("data-b-up"));
+          if (i <= 0) return;
+          const arr = getBannersState();
+          [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+          writeJson(KEYS.BANNERS, arr);
+          broadcastToMainApp("banners_updated", {});
+          renderAdsController();
+        });
+      });
+      bList.querySelectorAll("[data-b-dn]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const i = Number(btn.getAttribute("data-b-dn"));
+          const arr = getBannersState();
+          if (i >= arr.length - 1) return;
+          [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+          writeJson(KEYS.BANNERS, arr);
+          broadcastToMainApp("banners_updated", {});
+          renderAdsController();
+        });
+      });
+      bList.querySelectorAll("[data-b-del]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const i = Number(btn.getAttribute("data-b-del"));
+          const arr = getBannersState();
+          arr.splice(i, 1);
+          writeJson(KEYS.BANNERS, arr);
+          broadcastToMainApp("banners_updated", {});
+          renderAdsController();
+        });
+      });
+
+      // 1:1 Square Ad
+      const sq = getSquareAdState();
+      document.getElementById("squareAdEnabledToggle").checked = sq.enabled !== false;
+      document.getElementById("squareAdTagInput").value = sq.tag || "DEAL";
+      document.getElementById("squareAdLabelInput").value = sq.label || "Special Offer";
+      document.getElementById("squareAdImgInput").value = sq.img || "";
+      document.getElementById("squareAdLinkInput").value = sq.link || "";
+
+      // Popup Ads
+      const popListData = getPopupAdsState();
+      document.getElementById("popupAdEnabledToggle").checked = localStorage.getItem("powerPlumPopupEnabled") !== "0";
+      const pList = document.getElementById("popupSlidesList");
+      pList.innerHTML = popListData.map((p, idx) =>
+        "<div class='flex items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5'>" +
+          "<span class='font-bold text-slate-800 truncate'>" + (idx + 1) + ". " + escapeHtml(p.caption || "Popup Ad") + "</span>" +
+          "<button type='button' data-p-del='" + idx + "' class='text-red-600 font-black text-[11px] cursor-pointer'>✕</button>" +
+        "</div>"
+      ).join("");
+
+      pList.querySelectorAll("[data-p-del]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const i = Number(btn.getAttribute("data-p-del"));
+          const arr = getPopupAdsState();
+          arr.splice(i, 1);
+          writeJson(KEYS.POPUP_ADS, arr);
+          broadcastToMainApp("popup_ads_updated", {});
+          renderAdsController();
+        });
+      });
+    }
+
+    document.getElementById("addBannerSlideBtn").addEventListener("click", () => {
+      const title = sanitizeText(document.getElementById("newBannerTitleInput").value, 120) || "Power Plum Featured Offer";
+      const img = sanitizeText(document.getElementById("newBannerImgInput").value, 400) || DEFAULT_SEED_BANNERS[0].img;
+      const link = sanitizeText(document.getElementById("newBannerLinkInput").value, 400) || "https://www.youtube.com/@sulemanplumbing";
+      const arr = getBannersState();
+      arr.push({ title, img, link });
+      writeJson(KEYS.BANNERS, arr);
+      document.getElementById("newBannerTitleInput").value = "";
+      document.getElementById("newBannerImgInput").value = "";
+      document.getElementById("newBannerLinkInput").value = "";
+      broadcastToMainApp("banners_updated", {});
+      renderAdsController();
+      showToast("16:9 Banner slide added & synced!");
+    });
+
+    document.getElementById("previewBannerSliderBtn").addEventListener("click", () => {
+      const b = getBannersState()[0] || DEFAULT_SEED_BANNERS[0];
+      openPreviewModal("16:9 Banner Preview",
+        "<img src='" + escapeHtml(b.img) + "' alt='Banner' class='w-full aspect-video object-cover rounded-2xl bg-slate-900' />" +
+        "<p class='font-black text-slate-900'>" + escapeHtml(b.title) + "</p>" +
+        "<p class='text-[11px] text-blue-700 break-all'>" + escapeHtml(b.link) + "</p>"
+      );
+    });
+
+    document.getElementById("saveSquareAdBtn").addEventListener("click", () => {
+      const nextSq = {
+        enabled: document.getElementById("squareAdEnabledToggle").checked,
+        tag: sanitizeText(document.getElementById("squareAdTagInput").value, 14) || "DEAL",
+        label: sanitizeText(document.getElementById("squareAdLabelInput").value, 28) || "Offer",
+        img: sanitizeText(document.getElementById("squareAdImgInput").value, 400) || DEFAULT_SEED_SQUARE_AD.img,
+        link: sanitizeText(document.getElementById("squareAdLinkInput").value, 400) || "https://www.youtube.com/@sulemanplumbing"
+      };
+      writeJson(KEYS.SQUARE_AD, nextSq);
+      broadcastToMainApp("square_ad_updated", nextSq);
+      showToast("1:1 Square Ad saved & synced!");
+    });
+
+    document.getElementById("previewSquareAdBtn").addEventListener("click", () => {
+      const tag = sanitizeText(document.getElementById("squareAdTagInput").value, 14) || "DEAL";
+      const label = sanitizeText(document.getElementById("squareAdLabelInput").value, 28) || "Offer";
+      const img = sanitizeText(document.getElementById("squareAdImgInput").value, 400) || DEFAULT_SEED_SQUARE_AD.img;
+      openPreviewModal("1:1 Square Floating Ad Preview",
+        "<div class='w-32 h-32 mx-auto relative rounded-2xl overflow-hidden border-2 border-teal-500 shadow-lg'>" +
+          "<img src='" + escapeHtml(img) + "' alt='Square' class='w-full h-full object-cover' />" +
+          "<div class='absolute inset-x-0 bottom-0 bg-black/80 text-white p-1.5 text-center'>" +
+            "<span class='bg-amber-400 text-slate-950 text-[8px] font-black px-1.5 rounded'>" + escapeHtml(tag) + "</span>" +
+            "<p class='text-[10px] font-bold truncate mt-0.5'>" + escapeHtml(label) + "</p>" +
+          "</div>" +
+        "</div>"
+      );
+    });
+
+    document.getElementById("addPopupSlideBtn").addEventListener("click", () => {
+      const caption = sanitizeText(document.getElementById("newPopupCaptionInput").value, 140) || "Power Plum Special Offer";
+      const img = sanitizeText(document.getElementById("newPopupImgInput").value, 400) || DEFAULT_SEED_POPUP_ADS[0].img;
+      const link = sanitizeText(document.getElementById("newPopupLinkInput").value, 400) || "https://www.youtube.com/@sulemanplumbing";
+      const arr = getPopupAdsState();
+      arr.push({ caption, img, link });
+      writeJson(KEYS.POPUP_ADS, arr);
+      document.getElementById("newPopupCaptionInput").value = "";
+      document.getElementById("newPopupImgInput").value = "";
+      document.getElementById("newPopupLinkInput").value = "";
+      broadcastToMainApp("popup_ads_updated", {});
+      renderAdsController();
+      showToast("Popup slide added!");
+    });
+
+    document.getElementById("popupAdEnabledToggle").addEventListener("change", (e) => {
+      localStorage.setItem("powerPlumPopupEnabled", e.target.checked ? "1" : "0");
+      broadcastToMainApp("popup_enabled_changed", { enabled: e.target.checked });
+      showToast(e.target.checked ? "Popup Ad enabled." : "Popup Ad disabled.");
+    });
+
+    document.getElementById("triggerPopupNowBtn").addEventListener("click", () => {
+      const triggerId = "POP_TRIG_" + Date.now();
+      localStorage.setItem(KEYS.TRIGGER_POPUP, triggerId);
+      broadcastToMainApp("trigger_popup_now", { triggerId });
+      showToast("Popup trigger pushed to Main App!");
+    });
+
+    document.getElementById("previewPopupAdBtn").addEventListener("click", () => {
+      const p = getPopupAdsState()[0] || DEFAULT_SEED_POPUP_ADS[0];
+      openPreviewModal("Full-Screen Popup Ad Preview",
+        "<img src='" + escapeHtml(p.img) + "' alt='Popup' class='w-full aspect-video object-cover rounded-2xl bg-slate-900' />" +
+        "<p class='font-black text-slate-900'>" + escapeHtml(p.caption) + "</p>" +
+        "<p class='text-[11px] text-blue-700 break-all'>" + escapeHtml(p.link) + "</p>"
+      );
+    });
+    /* === [BLOCK END: ADS_AND_MEDIA_CONTROLLER] === */
+
+    /* === [BLOCK START: BROADCAST_AND_APP_CONFIG] === */
+    function renderBroadcastAndConfig() {
+      document.getElementById("broadcastMessageTextarea").value = localStorage.getItem(KEYS.NOTIF_TEXT) || "";
+      document.getElementById("broadcastBadgeToggle").checked = localStorage.getItem(KEYS.NOTIF_BADGE) !== "0";
+      document.getElementById("configYoutubeUrlInput").value = localStorage.getItem(KEYS.YOUTUBE_URL) || "https://www.youtube.com/@sulemanplumbing";
+      const prof = readJson(KEYS.PROFILE, { company: "POWER PLUM" });
+      document.getElementById("configDefaultBrandInput").value = prof.company || "POWER PLUM";
+      document.getElementById("adminSheetsUrlInput").value = localStorage.getItem(KEYS.SHEETS_WEBHOOK) || "";
+    }
+
+    document.getElementById("pushBroadcastBtn").addEventListener("click", () => {
+      const msg = sanitizeText(document.getElementById("broadcastMessageTextarea").value, 400);
+      const showBadge = document.getElementById("broadcastBadgeToggle").checked;
+      localStorage.setItem(KEYS.NOTIF_TEXT, msg);
+      localStorage.setItem(KEYS.NOTIF_BADGE, showBadge ? "1" : "0");
+      broadcastToMainApp("broadcast_pushed", { message: msg, showBadge });
+      showToast("Live broadcast notice pushed to Main App!");
+    });
+
+    document.getElementById("previewBroadcastBtn").addEventListener("click", () => {
+      const msg = sanitizeText(document.getElementById("broadcastMessageTextarea").value, 400) || "No broadcast message set.";
+      openPreviewModal("Broadcast Notice Preview",
+        "<div class='bg-orange-50 border border-orange-200 rounded-2xl p-3.5 text-slate-800 font-semibold'>" + escapeHtml(msg) + "</div>"
+      );
+    });
+
+    document.getElementById("saveAppConfigBtn").addEventListener("click", () => {
+      const ytUrl = sanitizeText(document.getElementById("configYoutubeUrlInput").value, 400) || "https://www.youtube.com/@sulemanplumbing";
+      const brand = sanitizeText(document.getElementById("configDefaultBrandInput").value, 80) || "POWER PLUM";
+      localStorage.setItem(KEYS.YOUTUBE_URL, ytUrl);
+      const prof = readJson(KEYS.PROFILE, {});
+      writeJson(KEYS.PROFILE, { ...prof, company: brand });
+      broadcastToMainApp("app_config_updated", { ytUrl, brand });
+      showToast("App & YouTube configuration saved & synced!");
+    });
+
+    document.getElementById("saveAdminSheetsUrlBtn").addEventListener("click", () => {
+      const url = sanitizeText(document.getElementById("adminSheetsUrlInput").value, 400);
+      if (url && !url.startsWith("https://")) {
+        showToast("Kripya valid HTTPS Google Apps Script URL enter karein.");
+        return;
+      }
+      localStorage.setItem(KEYS.SHEETS_WEBHOOK, url);
+      broadcastToMainApp("sheets_webhook_updated", { url });
+      showToast(url ? "Google Sheets endpoint saved!" : "Google Sheets endpoint cleared.");
+    });
+
+    document.getElementById("copyAdminAppsScriptBtn").addEventListener("click", () => {
+      const code = document.getElementById("adminAppsScriptTemplate")?.textContent || "";
+      if (!code) return;
+      let ok = false;
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = code;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        ok = document.execCommand("copy");
+        ta.remove();
+      } catch (e) {
+        ok = false;
+      }
+      showToast(ok ? "Apps Script template copied!" : "Manually copy code from box.");
+    });
+    /* === [BLOCK END: BROADCAST_AND_APP_CONFIG] === */
+
+    function refreshAdminDashboard() {
+      ensureSeedTelemetryIfEmpty();
+      renderTelemetryAndTechs();
+      renderCatalogManager();
+      renderAdsController();
+      renderBroadcastAndConfig();
+    }
+
+    // Boot
+    checkAdminPinGate();
+    refreshAdminDashboard();
+  })();
+  </script>
+</body>
+</html>
