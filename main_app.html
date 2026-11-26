@@ -2372,6 +2372,373 @@
 })();
 </script>
 <!-- === BLOCK: PP_9_16_POPUP_ONLY_FIX [END] === -->
+
+
+
+
+
+<!-- === BLOCK: PP_CLEAN_169_11_916_FIX [START] === -->
+<script>
+(function () {
+  var KEYS = {
+    banner: "powerPlumBanners",
+    square: "powerPlumSquareAds",
+    popup: "powerPlumPopupAds"
+  };
+
+  var SQUARE_CFG_KEY = "powerPlumSquareFadeCfg";
+  var squareTimer = null;
+
+  function toDirectImg(url) {
+    if (!url || typeof url !== "string") return "";
+    var u = url.trim();
+    var m = u.match(/\/d\/([a-zA-Z0-9_-]{20,})/) || u.match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
+    if (m && m[1]) return "https://lh3.googleusercontent.com/d/" + m[1] + "=w1080";
+    return u;
+  }
+
+  // Pre-fixed / placeholder / sample ads ko block karne ka filter
+  function isBlockedPrefixAd(item) {
+    if (!item) return true;
+    if (typeof item === "object" && (item.preset === true || item.isDefault === true || item.predefined === true)) {
+      return true;
+    }
+    var txt = "";
+    if (typeof item === "string") {
+      txt = item;
+    } else if (typeof item === "object") {
+      txt = [item.title, item.name, item.tag, item.img, item.image, item.url, item.link].join(" ");
+    }
+    txt = txt.toLowerCase();
+    var blockedWords = [
+      "prefix", "pre-fix", "prefixed", "default-ad", "sample-ad",
+      "demo-ad", "placeholder", "dummy", "featured-default"
+    ];
+    for (var i = 0; i < blockedWords.length; i++) {
+      if (txt.indexOf(blockedWords[i]) !== -1) return true;
+    }
+    return false;
+  }
+
+  function cleanSlotList(key) {
+    var list = [];
+    try {
+      var raw = JSON.parse(localStorage.getItem(key) || "[]");
+      if (Array.isArray(raw)) {
+        raw.forEach(function (entry) {
+          if (isBlockedPrefixAd(entry)) return;
+          if (typeof entry === "string" && entry.trim()) {
+            list.push({ title: "", img: toDirectImg(entry), link: "" });
+          } else if (entry && typeof entry === "object") {
+            var src = entry.img || entry.image || entry.url || entry.src || "";
+            if (src && src.trim()) {
+              list.push({
+                title: (entry.title || entry.name || "").trim(),
+                img: toDirectImg(src),
+                link: (entry.link || entry.url || "").trim()
+              });
+            }
+          }
+        });
+      }
+    } catch (e) {}
+    return list;
+  }
+
+  function saveSlotList(key, arr) {
+    localStorage.setItem(key, JSON.stringify(arr));
+  }
+
+  // 16:9 Banner se pre-fixed ads hata kar sirf clean user ads rakhna
+  function clean169BannerSlot() {
+    var cleaned = cleanSlotList(KEYS.banner);
+    saveSlotList(KEYS.banner, cleaned);
+
+    // Agar page par koi pre-fixed banner DOM element laga ho to use hide/remove karna
+    var nodes = document.querySelectorAll("[data-prefix-ad='true'], .prefix-ad, .default-feature-banner");
+    nodes.forEach(function (el) { el.remove(); });
+  }
+
+  function getSquareCfg() {
+    var def = { auto: true, seconds: 7 };
+    try {
+      var c = JSON.parse(localStorage.getItem(SQUARE_CFG_KEY) || "{}");
+      var sec = parseInt(c.seconds, 10);
+      if ([5, 6, 7, 8, 9, 10].indexOf(sec) === -1) sec = 7;
+      return { auto: c.auto !== false, seconds: sec };
+    } catch (e) {
+      return def;
+    }
+  }
+
+  function setSquareCfg(cfg) {
+    localStorage.setItem(SQUARE_CFG_KEY, JSON.stringify(cfg));
+  }
+
+  // 1:1 SQUARE MULTI-AD WITH 5-10s AUTO-ROTATE & SMOOTH FADE
+  function initSquareFadeAds() {
+    var box = document.getElementById("ppSquareFadeWidget");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "ppSquareFadeWidget";
+      box.style.cssText = "position:fixed;right:14px;bottom:14px;width:176px;z-index:9990;background:#0f172a;color:#fff;border-radius:12px;padding:8px;box-shadow:0 10px 26px rgba(0,0,0,0.45);font-family:sans-serif;";
+      document.body.appendChild(box);
+    }
+
+    var idx = 0;
+
+    function stopTimer() {
+      if (squareTimer) {
+        clearInterval(squareTimer);
+        squareTimer = null;
+      }
+    }
+
+    function startTimer() {
+      stopTimer();
+      var cfg = getSquareCfg();
+      var ads = cleanSlotList(KEYS.square);
+      if (cfg.auto && ads.length > 1) {
+        squareTimer = setInterval(function () {
+          var latest = cleanSlotList(KEYS.square);
+          if (latest.length > 1) {
+            idx = (idx + 1) % latest.length;
+            renderSquare(true);
+          }
+        }, cfg.seconds * 1000);
+      }
+    }
+
+    function addMultipleSquareAds() {
+      var countInput = prompt("Kitne 1:1 ads ek saath add karne hain?", "1");
+      var count = parseInt(countInput || "1", 10);
+      if (!count || count < 1) count = 1;
+      if (count > 20) count = 20;
+
+      var list = cleanSlotList(KEYS.square);
+      for (var i = 0; i < count; i++) {
+        var imgUrl = prompt("1:1 Ad #" + (i + 1) + " ka Image / Drive link paste karein:");
+        if (!imgUrl || !imgUrl.trim()) break;
+        var title = prompt("Ad #" + (i + 1) + " ka naam (optional):", "Square Ad " + (list.length + 1)) || "";
+        var link = prompt("Ad #" + (i + 1) + " ka click link (optional):", "https://") || "";
+        var item = { title: title.trim(), img: toDirectImg(imgUrl), link: link.trim() };
+        if (!isBlockedPrefixAd(item)) {
+          list.push(item);
+        }
+      }
+      saveSlotList(KEYS.square, list);
+      idx = Math.max(0, list.length - 1);
+      renderSquare(false);
+      startTimer();
+    }
+
+    function renderSquare(withFade) {
+      var ads = cleanSlotList(KEYS.square);
+      saveSlotList(KEYS.square, ads);
+      var cfg = getSquareCfg();
+
+      if (!ads.length) {
+        stopTimer();
+        box.innerHTML =
+          '<div style="font-size:11px;color:#cbd5e1;margin-bottom:6px;">1:1 Ads (0)</div>' +
+          '<button id="ppSqAddBtn" type="button" style="width:100%;padding:6px;border:none;border-radius:6px;background:#16a34a;color:#fff;font-size:12px;cursor:pointer;">+ Add 1:1 Ads</button>';
+        document.getElementById("ppSqAddBtn").onclick = addMultipleSquareAds;
+        return;
+      }
+
+      if (idx >= ads.length) idx = 0;
+      var cur = ads[idx];
+
+      box.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;margin-bottom:5px;gap:4px;">' +
+          '<span>1:1 (' + (idx + 1) + '/' + ads.length + ')</span>' +
+          '<button id="ppSqAddBtn" type="button" style="border:none;border-radius:4px;background:#16a34a;color:#fff;padding:2px 6px;font-size:11px;cursor:pointer;">+ Add</button>' +
+        '</div>' +
+        '<a id="ppSqLink" ' + (cur.link ? 'href="' + cur.link + '" target="_blank" rel="noopener"' : '') + ' style="display:block;border-radius:8px;overflow:hidden;background:#000;">' +
+          '<img id="ppSqImg" src="' + cur.img + '" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;opacity:' + (withFade ? '0.15' : '1') + ';transition:opacity 0.65s ease-in-out;" />' +
+        '</a>' +
+        '<div style="display:flex;gap:4px;margin-top:6px;align-items:center;">' +
+          '<button id="ppSqAutoBtn" type="button" style="flex:1;padding:3px 4px;border:none;border-radius:4px;background:' + (cfg.auto ? '#0d9488' : '#475569') + ';color:#fff;font-size:10px;cursor:pointer;">Fade:' + (cfg.auto ? 'ON' : 'OFF') + '</button>' +
+          '<select id="ppSqSecSel" style="padding:3px;border:none;border-radius:4px;background:#1e293b;color:#fff;font-size:10px;cursor:pointer;">' +
+            '<option value="5"' + (cfg.seconds === 5 ? ' selected' : '') + '>5s</option>' +
+            '<option value="6"' + (cfg.seconds === 6 ? ' selected' : '') + '>6s</option>' +
+            '<option value="7"' + (cfg.seconds === 7 ? ' selected' : '') + '>7s</option>' +
+            '<option value="8"' + (cfg.seconds === 8 ? ' selected' : '') + '>8s</option>' +
+            '<option value="9"' + (cfg.seconds === 9 ? ' selected' : '') + '>9s</option>' +
+            '<option value="10"' + (cfg.seconds === 10 ? ' selected' : '') + '>10s</option>' +
+          '</select>' +
+        '</div>' +
+        '<div style="display:flex;gap:4px;margin-top:5px;">' +
+          '<button id="ppSqPrevBtn" type="button" style="flex:1;padding:4px;border:none;border-radius:4px;background:#334155;color:#fff;font-size:11px;cursor:pointer;">&lt;</button>' +
+          '<button id="ppSqNextBtn" type="button" style="flex:1;padding:4px;border:none;border-radius:4px;background:#2563eb;color:#fff;font-size:11px;cursor:pointer;">&gt;</button>' +
+          '<button id="ppSqDelBtn" type="button" style="padding:4px 6px;border:none;border-radius:4px;background:#dc2626;color:#fff;font-size:11px;cursor:pointer;">x</button>' +
+        '</div>';
+
+      if (withFade) {
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            var imgEl = document.getElementById("ppSqImg");
+            if (imgEl) imgEl.style.opacity = "1";
+          });
+        });
+      }
+
+      document.getElementById("ppSqAddBtn").onclick = addMultipleSquareAds;
+      document.getElementById("ppSqAutoBtn").onclick = function () {
+        var c = getSquareCfg();
+        c.auto = !c.auto;
+        setSquareCfg(c);
+        renderSquare(false);
+        startTimer();
+      };
+      document.getElementById("ppSqSecSel").onchange = function (e) {
+        var c = getSquareCfg();
+        c.seconds = parseInt(e.target.value, 10) || 7;
+        setSquareCfg(c);
+        startTimer();
+      };
+      document.getElementById("ppSqPrevBtn").onclick = function () {
+        var latest = cleanSlotList(KEYS.square);
+        idx = (idx - 1 + latest.length) % latest.length;
+        renderSquare(true);
+        startTimer();
+      };
+      document.getElementById("ppSqNextBtn").onclick = function () {
+        var latest = cleanSlotList(KEYS.square);
+        idx = (idx + 1) % latest.length;
+        renderSquare(true);
+        startTimer();
+      };
+      document.getElementById("ppSqDelBtn").onclick = function () {
+        var latest = cleanSlotList(KEYS.square);
+        latest.splice(idx, 1);
+        saveSlotList(KEYS.square, latest);
+        idx = 0;
+        renderSquare(false);
+        startTimer();
+      };
+    }
+
+    renderSquare(false);
+    startTimer();
+  }
+
+  // 9:16 FULL-SCREEN POPUP (ONLY powerPlumPopupAds, NO 16:9 BANNER OR PREFIX FALLBACK)
+  function renderStrict916Popup(forceOpen) {
+    var popupAds = cleanSlotList(KEYS.popup);
+    saveSlotList(KEYS.popup, popupAds);
+
+    var btnId = "pp916StrictLauncher";
+    var launcher = document.getElementById(btnId);
+    if (!launcher) {
+      launcher = document.createElement("button");
+      launcher.id = btnId;
+      launcher.type = "button";
+      launcher.style.cssText = "position:fixed;left:14px;bottom:14px;z-index:9989;padding:8px 12px;border:none;border-radius:8px;background:#2563eb;color:#fff;font-size:12px;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,0.3);";
+      launcher.onclick = function () {
+        renderStrict916Popup(true);
+      };
+      document.body.appendChild(launcher);
+    }
+    launcher.textContent = "9:16 Popups (" + popupAds.length + ")";
+
+    // Agar 9:16 popup mein koi ad nahi hai to 16:9 banner ya pre-fixed ad bilkul nahi chalega
+    if (!forceOpen || !popupAds.length) return;
+
+    var existing = document.getElementById("pp916StrictModal");
+    if (existing) existing.remove();
+
+    var pIdx = 0;
+    var modal = document.createElement("div");
+    modal.id = "pp916StrictModal";
+    modal.style.cssText = "position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;padding:12px;";
+
+    modal.innerHTML =
+      '<div style="position:relative;width:min(92vw,390px);aspect-ratio:9/16;max-height:92vh;background:#090d16;border-radius:16px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.75);display:flex;flex-direction:column;">' +
+        '<button id="pp916StrictClose" type="button" style="position:absolute;top:10px;right:10px;z-index:5;width:34px;height:34px;border:none;border-radius:50%;background:#ef4444;color:#fff;font-size:20px;line-height:1;cursor:pointer;">&times;</button>' +
+        '<a id="pp916StrictLink" style="flex:1;width:100%;height:100%;display:block;overflow:hidden;">' +
+          '<img id="pp916StrictImg" alt="9:16 Ad" style="width:100%;height:100%;object-fit:cover;display:block;opacity:1;transition:opacity 0.55s ease-in-out;" />' +
+        '</a>' +
+        '<div style="position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,0.88));padding:10px 12px;display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:12px;z-index:4;">' +
+          '<button id="pp916StrictPrev" type="button" style="padding:5px 10px;border:none;border-radius:6px;background:rgba(255,255,255,0.22);color:#fff;cursor:pointer;">Prev</button>' +
+          '<span id="pp916StrictCounter"></span>' +
+          '<button id="pp916StrictNext" type="button" style="padding:5px 10px;border:none;border-radius:6px;background:#2563eb;color:#fff;cursor:pointer;">Next</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(modal);
+
+    function draw916() {
+      var list = cleanSlotList(KEYS.popup);
+      if (!list.length) {
+        modal.remove();
+        renderStrict916Popup(false);
+        return;
+      }
+      if (pIdx >= list.length) pIdx = 0;
+      var cur = list[pIdx];
+      var imgEl = document.getElementById("pp916StrictImg");
+      var aEl = document.getElementById("pp916StrictLink");
+      var cEl = document.getElementById("pp916StrictCounter");
+
+      imgEl.style.opacity = "0.2";
+      imgEl.src = cur.img;
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          imgEl.style.opacity = "1";
+        });
+      });
+
+      if (cur.link) {
+        aEl.setAttribute("href", cur.link);
+        aEl.setAttribute("target", "_blank");
+        aEl.setAttribute("rel", "noopener");
+      } else {
+        aEl.removeAttribute("href");
+      }
+      cEl.textContent = (pIdx + 1) + " / " + list.length;
+    }
+
+    draw916();
+    document.getElementById("pp916StrictClose").onclick = function () { modal.remove(); };
+    document.getElementById("pp916StrictPrev").onclick = function () {
+      var list = cleanSlotList(KEYS.popup);
+      pIdx = (pIdx - 1 + list.length) % list.length;
+      draw916();
+    };
+    document.getElementById("pp916StrictNext").onclick = function () {
+      var list = cleanSlotList(KEYS.popup);
+      pIdx = (pIdx + 1) % list.length;
+      draw916();
+    };
+  }
+
+  function boot() {
+    clean169BannerSlot();
+    initSquareFadeAds();
+    renderStrict916Popup(true);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+
+  window.addEventListener("storage", function (e) {
+    if (!e || !e.key || e.key === KEYS.banner || e.key === KEYS.square || e.key === KEYS.popup) {
+      clean169BannerSlot();
+      initSquareFadeAds();
+      renderStrict916Popup(false);
+    }
+  });
+})();
+</script>
+<!-- === BLOCK: PP_CLEAN_169_11_916_FIX [END] === -->
+
+
+
+
   
 </body>
 </html>
