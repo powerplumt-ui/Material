@@ -2074,76 +2074,122 @@
 
 
 
-
-<!-- === BLOCK: POWERPLUM_CLOUD_SHEET_SYNC [START] === -->
+<!-- === BLOCK: PP_9_16_POPUP_ONLY_FIX [START] === -->
 <script>
 (function () {
-  var CLOUD_API_URL = "YOUR_APPS_SCRIPT_WEB_APP_URL";
-  var KEYS = {
-    banner: "powerPlumBanners",
-    square: "powerPlumSquareAds",
-    popup: "powerPlumPopupAds"
-  };
-
-  function getLocal(key) {
-    try {
-      var arr = JSON.parse(localStorage.getItem(key) || "[]");
-      return Array.isArray(arr) ? arr : [];
-    } catch (e) { return []; }
+  function fixDriveUrl(url) {
+    if (!url || typeof url !== "string") return "";
+    var u = url.trim();
+    var m = u.match(/\/d\/([a-zA-Z0-9_-]{20,})/) || u.match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
+    if (m && m[1]) return "https://lh3.googleusercontent.com/d/" + m[1] + "=w1080";
+    return u;
   }
 
-  function setLocal(key, arr) {
-    localStorage.setItem(key, JSON.stringify(arr || []));
-  }
+  function extractPopupImages() {
+    var found = [];
+    var keys = ["powerPlumPopupAds", "powerplumPopupAds", "popupAds", "powerPlumPopupAdUrl", "pp_popup_ads"];
 
-  // Admin Panel se Google Sheet mein push karne ke liye
-  window.pushPowerPlumAdsToCloud = function () {
-    if (!CLOUD_API_URL || CLOUD_API_URL.indexOf("http") !== 0) return;
-    var payload = {
-      banner: getLocal(KEYS.banner),
-      square: getLocal(KEYS.square),
-      popup: getLocal(KEYS.popup)
-    };
-    fetch(CLOUD_API_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    }).catch(function () {});
-  };
-
-  // Worldwide kisi bhi technician ke phone par Google Sheet se latest ads lane ke liye
-  window.pullPowerPlumAdsFromCloud = function (onDone) {
-    if (!CLOUD_API_URL || CLOUD_API_URL.indexOf("http") !== 0) return;
-    fetch(CLOUD_API_URL + "?t=" + Date.now())
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (!data) return;
-        if (Array.isArray(data.banner)) setLocal(KEYS.banner, data.banner);
-        if (Array.isArray(data.square)) setLocal(KEYS.square, data.square);
-        if (Array.isArray(data.popup)) setLocal(KEYS.popup, data.popup);
-        window.dispatchEvent(new Event("storage"));
-        if (typeof onDone === "function") onDone(data);
-      })
-      .catch(function () {});
-  };
-
-  // Jab bhi localStorage update ho (Admin Panel mein save dabane par), cloud par auto-push ho
-  var origSetItem = localStorage.setItem;
-  localStorage.setItem = function (k, v) {
-    origSetItem.apply(this, arguments);
-    if (k === KEYS.banner || k === KEYS.square || k === KEYS.popup) {
-      window.pushPowerPlumAdsToCloud();
+    for (var i = 0; i < keys.length; i++) {
+      var raw = localStorage.getItem(keys[i]);
+      if (!raw) continue;
+      raw = raw.trim();
+      if (raw.indexOf("http") === 0) {
+        found.push({ img: fixDriveUrl(raw), link: "" });
+        continue;
+      }
+      try {
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(function (item) {
+            if (typeof item === "string" && item.trim()) {
+              found.push({ img: fixDriveUrl(item), link: "" });
+            } else if (item && typeof item === "object") {
+              var src = item.img || item.image || item.url || item.src || "";
+              if (src) found.push({ img: fixDriveUrl(src), link: item.link || item.url || "" });
+            }
+          });
+        } else if (parsed && typeof parsed === "object") {
+          var s = parsed.img || parsed.image || parsed.url || parsed.src || "";
+          if (s) found.push({ img: fixDriveUrl(s), link: parsed.link || "" });
+        }
+      } catch (e) {}
     }
+    return found;
+  }
+
+  function show916Popup(items) {
+    if (!items || !items.length) return;
+    var old = document.getElementById("pp916PopupOverlay");
+    if (old) old.remove();
+
+    var idx = 0;
+    var overlay = document.createElement("div");
+    overlay.id = "pp916PopupOverlay";
+    overlay.style.cssText = "position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:12px;";
+
+    overlay.innerHTML =
+      '<div style="position:relative;width:min(92vw,390px);aspect-ratio:9/16;max-height:92vh;background:#090d16;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.7);display:flex;flex-direction:column;">' +
+        '<button id="pp916Close" type="button" style="position:absolute;top:10px;right:10px;z-index:5;width:34px;height:34px;border:none;border-radius:50%;background:#ef4444;color:#fff;font-size:20px;line-height:1;cursor:pointer;">&times;</button>' +
+        '<a id="pp916Anchor" target="_blank" rel="noopener" style="flex:1;width:100%;height:100%;display:block;overflow:hidden;">' +
+          '<img id="pp916Img" alt="Popup Ad" style="width:100%;height:100%;object-fit:cover;display:block;" />' +
+        '</a>' +
+        '<div style="position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,0.85));padding:10px 12px;display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:12px;">' +
+          '<button id="pp916Prev" type="button" style="padding:5px 10px;border:none;border-radius:6px;background:rgba(255,255,255,0.2);color:#fff;cursor:pointer;">Prev</button>' +
+          '<span id="pp916Count"></span>' +
+          '<button id="pp916Next" type="button" style="padding:5px 10px;border:none;border-radius:6px;background:#2563eb;color:#fff;cursor:pointer;">Next</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    function renderSlide() {
+      var cur = items[idx];
+      var imgEl = document.getElementById("pp916Img");
+      var aEl = document.getElementById("pp916Anchor");
+      var cEl = document.getElementById("pp916Count");
+      imgEl.src = cur.img;
+      if (cur.link) {
+        aEl.setAttribute("href", cur.link);
+      } else {
+        aEl.removeAttribute("href");
+      }
+      cEl.textContent = (idx + 1) + " / " + items.length;
+    }
+
+    renderSlide();
+
+    document.getElementById("pp916Close").onclick = function () { overlay.remove(); };
+    document.getElementById("pp916Prev").onclick = function () {
+      idx = (idx - 1 + items.length) % items.length;
+      renderSlide();
+    };
+    document.getElementById("pp916Next").onclick = function () {
+      idx = (idx + 1) % items.length;
+      renderSlide();
+    };
+  }
+
+  window.open916PopupAd = function () {
+    show916Popup(extractPopupImages());
   };
 
-  // App khulte hi har phone mein cloud se latest ads fetch honge
-  document.addEventListener("DOMContentLoaded", function () {
-    window.pullPowerPlumAdsFromCloud();
+  function runCheck() {
+    var list = extractPopupImages();
+    if (list.length > 0) show916Popup(list);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () { setTimeout(runCheck, 250); });
+  } else {
+    setTimeout(runCheck, 250);
+  }
+
+  window.addEventListener("storage", function () {
+    setTimeout(runCheck, 150);
   });
 })();
 </script>
-<!-- === BLOCK: POWERPLUM_CLOUD_SHEET_SYNC [END] === -->
+<!-- === BLOCK: PP_9_16_POPUP_ONLY_FIX [END] === -->
 
 
   
