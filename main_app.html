@@ -2192,6 +2192,186 @@
 <!-- === BLOCK: PP_9_16_POPUP_ONLY_FIX [END] === -->
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <!-- === BLOCK: PP_9_16_POPUP_ONLY_FIX [START] === -->
+<script>
+(function () {
+  var DEBUG_TAG = "[PP_9_16_POPUP_DEBUG]";
+
+  function fixDriveUrl(url) {
+    if (!url || typeof url !== "string") return "";
+    var u = url.trim();
+    var m = u.match(/\/d\/([a-zA-Z0-9_-]{20,})/) || u.match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
+    if (m && m[1]) return "https://lh3.googleusercontent.com/d/" + m[1] + "=w1080";
+    return u;
+  }
+
+  function extractPopupImages() {
+    var found = [];
+    var keys = ["powerPlumPopupAds", "powerplumPopupAds", "popupAds", "powerPlumPopupAdUrl", "pp_popup_ads"];
+
+    for (var i = 0; i < keys.length; i++) {
+      var keyName = keys[i];
+      var raw = localStorage.getItem(keyName);
+      if (!raw) continue;
+      raw = raw.trim();
+
+      if (raw.indexOf("http") === 0) {
+        var directUrl = fixDriveUrl(raw);
+        console.log(DEBUG_TAG, "Found in key:", keyName, "| Final URL:", directUrl);
+        found.push({ key: keyName, img: directUrl, link: "" });
+        continue;
+      }
+
+      try {
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(function (item, index) {
+            if (typeof item === "string" && item.trim()) {
+              var u1 = fixDriveUrl(item);
+              console.log(DEBUG_TAG, "Found in key:", keyName, "[" + index + "] | Final URL:", u1);
+              found.push({ key: keyName, img: u1, link: "" });
+            } else if (item && typeof item === "object") {
+              var src = item.img || item.image || item.url || item.src || "";
+              if (src) {
+                var u2 = fixDriveUrl(src);
+                console.log(DEBUG_TAG, "Found in key:", keyName, "[" + index + "] | Final URL:", u2);
+                found.push({ key: keyName, img: u2, link: item.link || item.url || "" });
+              }
+            }
+          });
+        } else if (parsed && typeof parsed === "object") {
+          var s = parsed.img || parsed.image || parsed.url || parsed.src || "";
+          if (s) {
+            var u3 = fixDriveUrl(s);
+            console.log(DEBUG_TAG, "Found in key:", keyName, "| Final URL:", u3);
+            found.push({ key: keyName, img: u3, link: parsed.link || "" });
+          }
+        }
+      } catch (e) {
+        console.warn(DEBUG_TAG, "JSON parse error in key:", keyName, e);
+      }
+    }
+
+    if (found.length === 0) {
+      console.log(DEBUG_TAG, "No popup image found in checked keys:", keys);
+    }
+
+    return found;
+  }
+
+  function show916Popup(items) {
+    if (!items || !items.length) return;
+    var old = document.getElementById("pp916PopupOverlay");
+    if (old) old.remove();
+
+    var idx = 0;
+    var overlay = document.createElement("div");
+    overlay.id = "pp916PopupOverlay";
+    overlay.style.cssText = "position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:12px;";
+
+    overlay.innerHTML =
+      '<div style="position:relative;width:min(92vw,390px);aspect-ratio:9/16;max-height:92vh;background:#090d16;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.7);display:flex;flex-direction:column;">' +
+        '<button id="pp916Close" type="button" style="position:absolute;top:10px;right:10px;z-index:5;width:34px;height:34px;border:none;border-radius:50%;background:#ef4444;color:#fff;font-size:20px;line-height:1;cursor:pointer;">&times;</button>' +
+        '<a id="pp916Anchor" target="_blank" rel="noopener" style="flex:1;width:100%;height:100%;display:block;overflow:hidden;">' +
+          '<img id="pp916Img" alt="Popup Ad" style="width:100%;height:100%;object-fit:cover;display:block;" />' +
+        '</a>' +
+        '<div id="pp916ErrorBox" style="display:none;position:absolute;inset:48px 14px 54px 14px;background:#1f1115;border:1px solid #ef4444;color:#fecaca;border-radius:12px;padding:14px;overflow:auto;font-family:sans-serif;font-size:12px;line-height:1.45;z-index:4;"></div>' +
+        '<div style="position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,0.85));padding:10px 12px;display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:12px;z-index:4;">' +
+          '<button id="pp916Prev" type="button" style="padding:5px 10px;border:none;border-radius:6px;background:rgba(255,255,255,0.2);color:#fff;cursor:pointer;">Prev</button>' +
+          '<span id="pp916Count"></span>' +
+          '<button id="pp916Next" type="button" style="padding:5px 10px;border:none;border-radius:6px;background:#2563eb;color:#fff;cursor:pointer;">Next</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    var imgEl = document.getElementById("pp916Img");
+    var aEl = document.getElementById("pp916Anchor");
+    var cEl = document.getElementById("pp916Count");
+    var errBox = document.getElementById("pp916ErrorBox");
+
+    imgEl.onload = function () {
+      errBox.style.display = "none";
+      imgEl.style.display = "block";
+      console.log(DEBUG_TAG, "Image loaded successfully:", imgEl.currentSrc || imgEl.src);
+    };
+
+    imgEl.onerror = function () {
+      var curItem = items[idx] || {};
+      var failedUrl = curItem.img || imgEl.src || "";
+      console.error(DEBUG_TAG, "Image failed to load | Key:", curItem.key || "unknown", "| URL:", failedUrl);
+      imgEl.style.display = "none";
+      errBox.style.display = "block";
+      errBox.innerHTML =
+        '<strong style="color:#f87171;display:block;margin-bottom:6px;">Popup Image Load Nahi Ho Rahi</strong>' +
+        '<div><strong>Key:</strong> ' + (curItem.key || "unknown") + '</div>' +
+        '<div style="margin-top:6px;word-break:break-all;"><strong>URL:</strong> ' + failedUrl + '</div>' +
+        '<div style="margin-top:8px;color:#fca5a5;">Check karein: Google Drive file "Anyone with the link (Viewer)" par set ho, ya image link public aur valid ho.</div>';
+    };
+
+    function renderSlide() {
+      var cur = items[idx];
+      errBox.style.display = "none";
+      imgEl.style.display = "block";
+      console.log(DEBUG_TAG, "Rendering slide", idx + 1, "of", items.length, "| Key:", cur.key, "| Final URL:", cur.img);
+      imgEl.src = cur.img;
+      if (cur.link) {
+        aEl.setAttribute("href", cur.link);
+      } else {
+        aEl.removeAttribute("href");
+      }
+      cEl.textContent = (idx + 1) + " / " + items.length;
+    }
+
+    renderSlide();
+
+    document.getElementById("pp916Close").onclick = function () { overlay.remove(); };
+    document.getElementById("pp916Prev").onclick = function () {
+      idx = (idx - 1 + items.length) % items.length;
+      renderSlide();
+    };
+    document.getElementById("pp916Next").onclick = function () {
+      idx = (idx + 1) % items.length;
+      renderSlide();
+    };
+  }
+
+  window.open916PopupAd = function () {
+    show916Popup(extractPopupImages());
+  };
+
+  function runCheck() {
+    var list = extractPopupImages();
+    if (list.length > 0) show916Popup(list);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () { setTimeout(runCheck, 250); });
+  } else {
+    setTimeout(runCheck, 250);
+  }
+
+  window.addEventListener("storage", function () {
+    setTimeout(runCheck, 150);
+  });
+})();
+</script>
+<!-- === BLOCK: PP_9_16_POPUP_ONLY_FIX [END] === -->
   
 </body>
 </html>
