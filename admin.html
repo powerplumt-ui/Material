@@ -1527,10 +1527,10 @@
 
 
 
-<!-- === BLOCK: PP_ADMIN_11_APPEND_ONLY [START] === -->
+<!-- === BLOCK: PP_ADMIN_11_SLIDE_LIST_CLEAN [START] === -->
 <script>
 (function () {
-  var SQUARE_KEY = "powerPlumSquareAds";
+  var KEY = "powerPlumSquareAds";
 
   function toDirectImg(url) {
     if (!url || typeof url !== "string") return "";
@@ -1540,137 +1540,116 @@
     return u;
   }
 
-  function getSquareList() {
+  function getSlides() {
     try {
-      var raw = JSON.parse(localStorage.getItem(SQUARE_KEY) || "[]");
-      return Array.isArray(raw) ? raw : [];
+      var arr = JSON.parse(localStorage.getItem(KEY) || "[]");
+      return Array.isArray(arr) ? arr : [];
     } catch (e) {
       return [];
     }
   }
 
-  function setSquareList(arr) {
-    localStorage.setItem(SQUARE_KEY, JSON.stringify(arr));
-    window.dispatchEvent(new StorageEvent("storage", { key: SQUARE_KEY, newValue: JSON.stringify(arr) }));
+  function setSlides(arr) {
+    localStorage.setItem(KEY, JSON.stringify(arr));
+    window.dispatchEvent(new StorageEvent("storage", { key: KEY, newValue: JSON.stringify(arr) }));
   }
 
-  // Global helper taaki aapke admin panel ka purana button bhi list me append kar sake
-  window.appendPowerPlum11Ad = function (imgUrl, clickLink, title) {
-    var cleanImg = toDirectImg(imgUrl);
-    if (!cleanImg) return getSquareList();
-    var list = getSquareList();
-    list.push({
-      title: (title || ("1:1 Ad " + (list.length + 1))).trim(),
-      img: cleanImg,
-      link: (clickLink || "").trim()
+  function findSquareInputs() {
+    var inputs = Array.prototype.slice.call(document.querySelectorAll("input"));
+    var imgInput = null;
+    var linkInput = null;
+
+    inputs.forEach(function (inp) {
+      var ph = (inp.placeholder || "").toLowerCase();
+      if (!imgInput && (ph.indexOf("square image") !== -1 || (ph.indexOf("1:1") !== -1 && ph.indexOf("url") !== -1))) {
+        imgInput = inp;
+      } else if (imgInput && !linkInput && (ph.indexOf("target link") !== -1 || ph.indexOf("link") !== -1 || ph.indexOf("url") !== -1)) {
+        linkInput = inp;
+      }
     });
-    setSquareList(list);
-    return list;
-  };
 
-  // Admin me existing 1:1 input field ke paas hi ek chhota "+ Add to 1:1 List" aur "Bulk" helper attach karna
-  function attachToExisting11Input() {
-    if (document.getElementById("ppAdmin11InlineBar")) return;
+    return { imgInput: imgInput, linkInput: linkInput };
+  }
 
-    var inputs = Array.prototype.slice.call(document.querySelectorAll("input[type='text'], input[type='url'], input:not([type])"));
-    var targetInput = null;
+  function mountClean11Slides() {
+    if (document.getElementById("ppClean11SlideWrap")) return;
+    var pair = findSquareInputs();
+    if (!pair.imgInput) return;
 
-    for (var i = 0; i < inputs.length; i++) {
-      var hint = ((inputs[i].id || "") + " " + (inputs[i].name || "") + " " + (inputs[i].placeholder || "") + " " + ((inputs[i].parentElement && inputs[i].parentElement.innerText) || "")).toLowerCase();
-      if (hint.indexOf("1:1") !== -1 || hint.indexOf("1/1") !== -1 || hint.indexOf("square") !== -1) {
-        targetInput = inputs[i];
-        break;
-      }
-    }
+    var anchorEl = pair.linkInput || pair.imgInput;
+    var wrap = document.createElement("div");
+    wrap.id = "ppClean11SlideWrap";
+    wrap.style.cssText = "margin-top:10px;";
 
-    var bar = document.createElement("div");
-    bar.id = "ppAdmin11InlineBar";
-    bar.style.cssText = "margin-top:8px;padding:10px;border-radius:8px;background:#111827;color:#f9fafb;font-family:sans-serif;font-size:12px;";
-    bar.innerHTML =
-      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">' +
-        '<span>1:1 Saved Links: <strong id="ppAdmin11Count">' + getSquareList().length + '</strong></span>' +
-        '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
-          '<button id="ppAdmin11AppendBtn" type="button" style="padding:5px 10px;border:none;border-radius:6px;background:#16a34a;color:#fff;font-size:11px;cursor:pointer;">+ Add Link to 1:1 List</button>' +
-          '<button id="ppAdmin11BulkToggle" type="button" style="padding:5px 10px;border:none;border-radius:6px;background:#2563eb;color:#fff;font-size:11px;cursor:pointer;">+ Bulk Links</button>' +
-          '<button id="ppAdmin11ClearBtn" type="button" style="padding:5px 10px;border:none;border-radius:6px;background:#dc2626;color:#fff;font-size:11px;cursor:pointer;">Clear</button>' +
-        '</div>' +
+    wrap.innerHTML =
+      '<div style="display:flex;justify-content:flex-end;margin-bottom:8px;">' +
+        '<button id="ppClean11AddSlideBtn" type="button" style="padding:7px 14px;border:none;border-radius:10px;background:#2e2a5b;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">+ Slide</button>' +
       '</div>' +
-      '<div id="ppAdmin11BulkBox" style="display:none;margin-top:8px;">' +
-        '<textarea id="ppAdmin11BulkText" rows="4" placeholder="Har line mein ek 1:1 link dalein (ya link | click_url)" style="width:100%;box-sizing:border-box;padding:7px;border-radius:6px;border:1px solid #374151;background:#030712;color:#fff;font-size:11px;"></textarea>' +
-        '<button id="ppAdmin11BulkSave" type="button" style="margin-top:6px;padding:5px 12px;border:none;border-radius:6px;background:#0d9488;color:#fff;font-size:11px;cursor:pointer;">Save All 1:1 Links</button>' +
-      '</div>' +
-      '<div id="ppAdmin11ListView" style="margin-top:8px;font-size:11px;color:#cbd5e1;max-height:120px;overflow:auto;"></div>';
+      '<div id="ppClean11SlideItems"></div>';
 
-    if (targetInput && targetInput.parentNode) {
-      targetInput.parentNode.insertBefore(bar, targetInput.nextSibling);
-    } else {
-      document.body.appendChild(bar);
-    }
+    anchorEl.parentNode.insertBefore(wrap, anchorEl.nextSibling);
 
-    function refreshView() {
-      var list = getSquareList();
-      var cntEl = document.getElementById("ppAdmin11Count");
-      var listEl = document.getElementById("ppAdmin11ListView");
-      if (cntEl) cntEl.textContent = list.length;
-      if (listEl) {
-        if (!list.length) {
-          listEl.textContent = "Abhi koi link add nahi hai.";
-        } else {
-          listEl.innerHTML = list.map(function (item, idx) {
-            return '<div style="padding:3px 0;border-bottom:1px solid #1f2937;">' + (idx + 1) + '. ' + (item.img || "") + '</div>';
-          }).join("");
-        }
+    function renderList() {
+      var slides = getSlides();
+      var box = document.getElementById("ppClean11SlideItems");
+      if (!box) return;
+      if (!slides.length) {
+        box.innerHTML = "";
+        return;
       }
-    }
+      box.innerHTML = slides.map(function (s, i) {
+        var label = s.title || s.img || ("Slide " + (i + 1));
+        return (
+          '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin-bottom:8px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;color:#0f172a;font-size:13px;">' +
+            '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:10px;">' + (i + 1) + '. ' + label + '</span>' +
+            '<button data-rm-11="' + i + '" type="button" style="border:none;background:transparent;color:#ef4444;font-size:16px;font-weight:700;cursor:pointer;line-height:1;">&times;</button>' +
+          '</div>'
+        );
+      }).join("");
 
-    document.getElementById("ppAdmin11AppendBtn").onclick = function () {
-      var val = targetInput ? targetInput.value.trim() : "";
-      if (!val) {
-        val = prompt("1:1 square ad ka link paste karein:") || "";
-      }
-      if (!val.trim()) return;
-      window.appendPowerPlum11Ad(val.trim(), "", "");
-      if (targetInput) targetInput.value = "";
-      refreshView();
-    };
-
-    document.getElementById("ppAdmin11BulkToggle").onclick = function () {
-      var box = document.getElementById("ppAdmin11BulkBox");
-      if (box) box.style.display = box.style.display === "none" ? "block" : "none";
-    };
-
-    document.getElementById("ppAdmin11BulkSave").onclick = function () {
-      var ta = document.getElementById("ppAdmin11BulkText");
-      if (!ta || !ta.value.trim()) return;
-      var lines = ta.value.split(/\r?\n/);
-      lines.forEach(function (line) {
-        var t = line.trim();
-        if (!t) return;
-        var parts = t.split(/\s*\|\s*/);
-        window.appendPowerPlum11Ad((parts[0] || "").trim(), (parts[1] || "").trim(), "");
+      box.querySelectorAll("[data-rm-11]").forEach(function (btn) {
+        btn.onclick = function () {
+          var idx = parseInt(btn.getAttribute("data-rm-11"), 10);
+          var list = getSlides();
+          if (!isNaN(idx) && idx >= 0 && idx < list.length) {
+            list.splice(idx, 1);
+            setSlides(list);
+            renderList();
+          }
+        };
       });
-      ta.value = "";
-      refreshView();
+    }
+
+    document.getElementById("ppClean11AddSlideBtn").onclick = function () {
+      var rawImg = pair.imgInput ? pair.imgInput.value.trim() : "";
+      var rawLink = pair.linkInput ? pair.linkInput.value.trim() : "";
+      if (!rawImg) {
+        alert("Pehle Square Image URL (1:1) dalein.");
+        return;
+      }
+      var list = getSlides();
+      list.push({
+        title: "1:1 Ad " + (list.length + 1),
+        img: toDirectImg(rawImg),
+        link: rawLink
+      });
+      setSlides(list);
+      pair.imgInput.value = "";
+      if (pair.linkInput) pair.linkInput.value = "";
+      renderList();
     };
 
-    document.getElementById("ppAdmin11ClearBtn").onclick = function () {
-      setSquareList([]);
-      refreshView();
-    };
-
-    refreshView();
+    renderList();
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", attachToExisting11Input);
+    document.addEventListener("DOMContentLoaded", function () { setTimeout(mountClean11Slides, 300); });
   } else {
-    attachToExisting11Input();
+    setTimeout(mountClean11Slides, 300);
   }
 })();
 </script>
-<!-- === BLOCK: PP_ADMIN_11_APPEND_ONLY [END] === -->
-            
-  
+<!-- === BLOCK: PP_ADMIN_11_SLIDE_LIST_CLEAN [END] === -->
   
 </body>
 </html>
