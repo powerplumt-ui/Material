@@ -2377,7 +2377,83 @@
 
 
 
-                    
+      <!-- === BLOCK: PP_MAIN_11_EXISTING_ROTATOR [START] === -->
+<script>
+(function () {
+  var KEY = "powerPlumSquareAds";
+  var idx = 0;
+
+  function toDirectImg(url) {
+    if (!url || typeof url !== "string") return "";
+    var u = url.trim();
+    var m = u.match(/\/d\/([a-zA-Z0-9_-]{20,})/) || u.match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
+    if (m && m[1]) return "https://lh3.googleusercontent.com/d/" + m[1] + "=w1080";
+    return u;
+  }
+
+  function getSlides() {
+    try {
+      var arr = JSON.parse(localStorage.getItem(KEY) || "[]");
+      if (!Array.isArray(arr)) return [];
+      return arr.map(function (x) {
+        if (typeof x === "string") return { img: toDirectImg(x), link: "" };
+        if (x && typeof x === "object") {
+          return { img: toDirectImg(x.img || x.image || x.url || ""), link: (x.link || "").trim() };
+        }
+        return null;
+      }).filter(function (item) { return item && item.img; });
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function findExistingSquareTarget() {
+    var candidates = Array.prototype.slice.call(document.querySelectorAll("div, a, img"));
+    for (var i = 0; i < candidates.length; i++) {
+      var el = candidates[i];
+      if (el.id && el.id.indexOf("pp") === 0) continue;
+      var st = window.getComputedStyle(el);
+      var rect = el.getBoundingClientRect();
+      if (st.position === "fixed" && rect.width >= 90 && rect.width <= 260 && rect.height >= 90 && rect.height <= 260) {
+        return el;
+      }
+    }
+    return null;
+  }
+
+  function applyNextSlide() {
+    var slides = getSlides();
+    if (slides.length <= 1) return;
+    var target = findExistingSquareTarget();
+    if (!target) return;
+
+    idx = (idx + 1) % slides.length;
+    var cur = slides[idx];
+
+    var img = target.tagName === "IMG" ? target : target.querySelector("img");
+    if (img) {
+      img.style.transition = "opacity 0.5s ease";
+      img.style.opacity = "0.25";
+      setTimeout(function () {
+        img.src = cur.img;
+        img.style.opacity = "1";
+      }, 160);
+    } else {
+      target.style.transition = "opacity 0.5s ease";
+      target.style.opacity = "0.35";
+      setTimeout(function () {
+        target.style.backgroundImage = "url('" + cur.img + "')";
+        target.style.backgroundSize = "cover";
+        target.style.backgroundPosition = "center";
+        target.style.opacity = "1";
+      }, 160);
+    }
+  }
+
+  setInterval(applyNextSlide, 6000);
+})();
+</script>
+<!-- === BLOCK: PP_MAIN_11_EXISTING_ROTATOR [END] === -->              
 
 
 
