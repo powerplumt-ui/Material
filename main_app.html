@@ -405,6 +405,107 @@
   </div>
 
   <script>
+
+
+
+
+    
+
+
+
+
+
+
+
+/* === MAIN APP SECURITY MODULE (PASTE IN MAIN APP SCRIPT) === */
+(function (w) {
+  "use strict";
+
+  const MAINAPP_SEC = {
+    escapeHtml(val) {
+      return String(val == null ? "" : val)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    },
+
+    cleanText(val, maxLen = 300) {
+      return String(val == null ? "" : val)
+        .replace(/[\u0000-\u001F\u007F]/g, "")
+        .trim()
+        .slice(0, maxLen);
+    },
+
+    safeParseJson(rawStr, fallback = null) {
+      try {
+        const parsed = JSON.parse(String(rawStr || ""), (k, v) => {
+          if (k === "__proto__" || k === "constructor" || k === "prototype") return undefined;
+          return v;
+        });
+        return parsed == null ? fallback : parsed;
+      } catch (_) {
+        return fallback;
+      }
+    },
+
+    safeUrl(rawUrl) {
+      const s = String(rawUrl || "").trim();
+      if (!s || s.length > 500 || /(^|[\\/])\.\.([\\/]|$)/.test(s)) return "";
+      try {
+        const u = new URL(s);
+        if (u.protocol !== "https:" && u.protocol !== "http:") return "";
+        const h = u.hostname.toLowerCase();
+        if (
+          h === "localhost" || h === "127.0.0.1" || h === "0.0.0.0" || h === "::1" ||
+          h.startsWith("192.168.") || h.startsWith("10.") || h.startsWith("169.254.") ||
+          /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(h)
+        ) {
+          return "";
+        }
+        return u.href;
+      } catch (_) {
+        return "";
+      }
+    },
+
+    openSafeLink(rawUrl) {
+      const clean = this.safeUrl(rawUrl);
+      if (!clean) return false;
+      w.open(clean, "_blank", "noopener,noreferrer");
+      return true;
+    },
+
+    guardFormInputs(root = document) {
+      root.querySelectorAll("input[type='text'], textarea").forEach((el) => {
+        el.addEventListener("change", () => {
+          el.value = this.cleanText(el.value, el.maxLength > 0 ? el.maxLength : 300);
+        });
+      });
+    }
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => MAINAPP_SEC.guardFormInputs(document));
+  } else {
+    MAINAPP_SEC.guardFormInputs(document);
+  }
+
+  w.MAINAPP_SEC = MAINAPP_SEC;
+})(window);
+
+
+
+
+
+
+
+
+
+    
+
+    
   (() => {
     "use strict";
 
