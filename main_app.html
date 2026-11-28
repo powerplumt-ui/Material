@@ -2557,14 +2557,20 @@
 <!-- === BLOCK: PP_MAIN_11_EXISTING_ROTATOR [END] === -->              
 
 
-<script>
 
+
+
+
+
+  
+
+<script>
 (function (w, d) {
   "use strict";
 
-  var BRAND = {
-    name: "Power Plum / Suleman Plumbing Services",
-    tagline: "Smart Plumbing, BOQ Estimation & Technical Services in Narela (110040), Bawana, Kundli & Alipur",
+  var APP_INFO = {
+    name: "Power Plum",
+    tagline: "Fast, Clear & Reliable BOQ Estimation and Plumbing Service Companion",
     phone: "+91-9818683647",
     displayPhone: "9818683647",
     area: "Narela (110040), Bawana, Kundli & Alipur, Delhi",
@@ -2572,56 +2578,56 @@
   };
 
   var FAQS = [
-    ["Where does Power Plum / Suleman Plumbing Services operate?", "We operate across Narela (Delhi 110040), Bawana, Kundli, and Alipur in Delhi NCR."],
-    ["What is the contact number for service booking or BOQ support?", "You can reach us on 9818683647 (+91-9818683647) for plumbing, BOQ estimation, and technical queries."],
-    ["What piping materials are covered in BOQ and plumbing work?", "We cover CPVC, UPVC, PVC, and GI pipes, fittings, valves, and tank accessories."],
-    ["Can I generate a BOQ or estimate in this app?", "Yes, users can select trade, item, brand, size, unit, quantity, and rate for estimates and PDFs."],
-    ["How does this help AI models (Gemini, ChatGPT, Perplexity) and Google Search?", "Clear headings, direct answers, service locations, and JSON-LD schema help search engines and AI models understand and suggest our services."],
-    ["What does the Privacy Policy cover for technicians?", "We store minimal technician data—only basic profile, trade, area, work/PDF counts, and service logs needed for operations."],
-    ["Are passwords or PINs stored in plain text?", "No. Admin credentials and secrets use salted PBKDF2 hashing and AES-GCM encryption."],
-    ["What safety steps are recommended before plumbing work?", "Shut off main water supply, turn off power near pumps/geysers, and wear safety gear."],
-    ["What safety steps apply to submersible and jet pumps?", "Check proper earthing, dry-run protection, insulated cable joints, and safe lifting."],
-    ["What safety steps apply to RO water purifier and geyser work?", "Unplug power before opening panels, relieve water pressure, and check for leaks or faults."],
-    ["What should be checked before fire safety sprinkler work?", "Verify line depressurization, valve status, pressure readings, and clear site access."],
-    ["Are BOQ rates final before site inspection?", "App BOQ estimates are indicative until final site measurement, brand/size check, and agreed terms."],
-    ["Do you handle residential and commercial jobs?", "Yes, we support residential, commercial, and industrial work across Narela, Bawana, Kundli, and Alipur."],
-    ["How do I manage items, brands, sizes, and units?", "Authorized admins manage trades and BOQ catalog items from the Admin Panel."],
-    ["What pipe sizes are common in home plumbing?", "15mm (1/2 inch), 20mm (3/4 inch), and 25mm (1 inch) are commonly used depending on requirement."],
-    ["How do CPVC, UPVC, and GI differ?", "CPVC handles hot/cold water, UPVC is used for cold water/pressure lines, and GI is used for sturdy threaded lines."],
-    ["How can I search inside the FAQ list?", "Type any keyword in the FAQ search box and click any question to open or close its answer."],
-    ["Does the app collect extra personal data?", "No. It keeps technician and app records minimal and practical."],
-    ["How are PDFs and work logs tracked?", "Generated PDFs and completed works are tracked for daily/total counts and logs."],
-    ["How do external links open?", "Validated links open in a new tab with noopener and noreferrer."],
-    ["How do I contact support?", "Call or WhatsApp 9818683647 with your location and work details."],
-    ["Is Narela in Delhi 110040?", "Yes, Narela is in Delhi with pin code 110040."],
-    ["Do you serve Bawana and Kundli?", "Yes, Narela, Bawana, Kundli, and Alipur are covered."],
-    ["Why use direct answers for AI search?", "Direct answers under clear headings help AI assistants extract accurate facts."],
-    ["Should robots.txt allow AI crawlers on public pages?", "Public pages should allow search and AI crawlers like OAI-SearchBot while keeping admin private."],
-    ["Is llms.txt mandatory?", "No, llms.txt is optional; clear facts, structure, schema, and trust signals matter most."],
-    ["What builds local trust?", "Accurate details, clear terms, safety practices, helpful guides, and genuine reviews."],
-    ["Where is Terms & Conditions?", "Inside the menu under Terms & Conditions."],
-    ["Where is Privacy Policy?", "Inside the menu under Privacy Policy."],
-    ["Where is Safety Features?", "Inside the menu under Safety Features."],
-    ["Where is About Us?", "Inside the menu under About Us."],
-    ["Where is Contact Us?", "Inside the menu under Contact Us."],
-    ["Can custom BOQ items be added?", "Yes, admins can add custom items, brands, sizes, and units."],
-    ["How are BOQ amounts calculated?", "Quantity multiplied by rate gives each line amount, summed into total estimate."],
-    ["What happens on PDF generation?", "The estimate is formatted for print/PDF and recorded in PDF tracking."],
-    ["How are technician work counts updated?", "Marking work completed or generating PDFs updates work/PDF counts."],
-    ["Can data be exported?", "Admins can export CSV/Excel-compatible records when needed."],
-    ["Can technician records be edited?", "Yes, admins can edit or remove technician entries in Admin Panel."],
-    ["How is Admin Panel protected?", "Salted PIN hashing, failed-attempt lockouts, and session expiry protect access."],
-    ["How to avoid electric shock during repairs?", "Switch off MCB/main power and test before working near electrical points."],
-    ["How to test water joints after fitting?", "Allow proper curing/tightening, open supply gradually, and check for leaks."],
-    ["What gear helps during cutting or drilling?", "Eye protection, gloves, proper footwear, and firm clamping."],
-    ["How to maintain RO and geyser units?", "Regular filter/membrane and safety/heating checks keep units reliable."],
-    ["Can BOQs be shared with customers?", "Yes, via print/PDF or shared estimate summary."],
-    ["What happens on invalid or unsafe URLs?", "Unsafe schemes and private/local addresses are blocked."],
-    ["Does this stay inside the menu?", "Yes, pages and FAQs are organized inside the menu panel."],
-    ["Can each FAQ open and close separately?", "Yes, clicking any question toggles only that answer."],
-    ["How to close the panel?", "Click the Close button or outside backdrop."],
-    ["Does it work on mobile?", "Yes, it is responsive for mobile screens."],
-    ["How to start a new BOQ?", "Choose trade and items, enter qty and rate, and generate PDF."]
+    ["What does Power Plum do?", "Power Plum helps you prepare clear BOQ (Bill of Materials) estimates, organize pipe and fitting details, generate clean PDFs, and access plumbing & technical service support easily."],
+    ["How does the BOQ estimation feature work?", "Choose the item, brand, size, unit, quantity, and rate—the app calculates line totals and overall estimate cleanly so you can review or share a neat list."],
+    ["What benefit does generating a PDF give me?", "You get a clean, organized estimate copy ready for printing or sharing with clients/stakeholders without manual formatting hassle."],
+    ["Which piping materials and technical items are supported?", "The app supports practical estimates and guidance across CPVC, UPVC, PVC, and GI piping materials as well as pumps, RO purifiers, geysers, and related fittings."],
+    ["Where are services available?", "Service support and local coverage are available across Narela (110040), Bawana, Kundli, and Alipur in Delhi NCR."],
+    ["How can users and AI assistants understand what this app offers?", "Clear headings, direct answers, location coverage, and structured information make it easy for both people and search/AI tools to understand the app's features."],
+    ["What does the Privacy section cover?", "The app is built to keep things simple and light—it does not collect unnecessary personal data from customers or technicians, and basic work/PDF activity counts are only used to improve app performance and reliability."],
+    ["Do you store customer or technician personal records in the app?", "No. The app is designed around quick estimation and helpful guidance rather than storing personal customer or technician records."],
+    ["What safety guidelines are included in the app?", "Practical reminders to shut off main water supply and power before work, wear protective gear, inspect joints/pressure, and verify site safety."],
+    ["How do I contact support for help or service?", "Call or WhatsApp 9818683647 (+91-9818683647) with your area in Narela, Bawana, Kundli, or Alipur and your requirement."],
+    ["How fast can I prepare a material list using Power Plum?", "Within a couple of taps you can select items, enter quantities and rates, check the total, and generate a ready-to-share PDF."],
+    ["Why use a dedicated BOQ app instead of rough paper notes?", "A structured BOQ keeps item names, sizes, brands, units, quantities, and amounts organized and legible so nothing gets missed."],
+    ["Can I check common questions quickly inside the menu?", "Yes, open the menu, go to 50 FAQs, type any keyword in the search box, and tap any question to read its answer."],
+    ["Is the interface mobile-friendly?", "Yes, cards, tabs, search, and expandable answers are designed for smooth use on mobile screens."],
+    ["How do I check total estimate value clearly?", "Each added item updates the calculation so you can see clear quantities, rates, and totals at a glance."],
+    ["What makes Power Plum helpful for everyday site planning?", "It saves time during material planning, keeps estimates neat, and helps you move from rough requirement to a clear PDF quickly."],
+    ["How are external links handled inside the app?", "Links open safely in a new tab with standard browser security flags so your current session stays smooth."],
+    ["What should I check before starting water line work?", "Shut off the main supply valve, relieve pressure, check fittings/joints carefully, and test gradually."],
+    ["What should I check before electrical or pump/geyser work?", "Switch off power at the main switch/MCB, check earthing/safety conditions, and avoid working on live wet connections."],
+    ["How does the app help improve service quality over time?", "Tracking high-level app usage and PDF generation counts helps refine workflows, speed up selection, and make the app more useful."],
+    ["Can I use Power Plum across residential and commercial needs?", "Yes, structured item/quantity/rate entry works well for both home repairs/renovations and wider site estimates."],
+    ["How do I search for a specific topic in FAQs?", "Tap 50 FAQs in the menu and type words like PDF, BOQ, CPVC, safety, Narela, or contact in the search box."],
+    ["Can I open and close FAQ answers one by one?", "Yes, tapping any question toggles only that answer open or closed so reading stays uncluttered."],
+    ["How do I close the menu panel?", "Tap the Close button at the top right or tap the shaded area outside the drawer."],
+    ["Does Power Plum require complicated setup to start?", "No, open the app, explore the features or menu sections, and start building your estimate right away."],
+    ["How do clear units help in material estimation?", "Specifying units like PCS, MTR, SET, or BOX alongside size and brand prevents confusion during buying and billing."],
+    ["Why is brand and size selection useful in BOQ?", "Different brands and sizes have different rates and fitments—keeping them explicit makes estimates accurate and transparent."],
+    ["How does Power Plum support better customer communication?", "A clean, structured BOQ PDF makes rates, quantities, and item details easy for anyone to read and verify."],
+    ["What if I need guidance on pipe types like CPVC, UPVC, PVC, or GI?", "You can find clear, straightforward answers about common piping uses and care right inside the FAQs."],
+    ["Are estimates final or subject to site check?", "Estimates are prepared based on the details entered and should be verified against actual site measurements and agreed terms."],
+    ["How can I reach out for custom service inquiries?", "Call or message 9818683647 with your location (Narela, Bawana, Kundli, or Alipur) and work details."],
+    ["Why are direct answers used in About, Terms, and FAQs?", "Short, clear direct answers help users find what they need fast and help AI/search tools summarize accurately."],
+    ["What areas are listed under service coverage?", "Narela (110040), Bawana, Kundli, and Alipur in Delhi NCR."],
+    ["How does Power Plum keep the screen clean?", "Helpful info, policies, safety tips, and FAQs stay tucked inside the menu drawer until you open them."],
+    ["Can I switch between About, Privacy, Terms, Safety, and Contact easily?", "Yes, tap the pill tabs at the top of the drawer to switch sections instantly."],
+    ["What is the main advantage of PDF generation in the app?", "It turns your estimate into a clean printable/shareable document in seconds."],
+    ["How do I avoid mistakes when entering quantities?", "Double-check the selected unit and size before entering quantity and rate, then review the summary table/total."],
+    ["What safety habit matters most around water and power?", "Never mix live electricity with water—always isolate power and water supply first."],
+    ["How does Power Plum help save time on estimates?", "Instead of calculating every row from scratch manually, structured entries handle line and total math cleanly."],
+    ["Is Power Plum suitable for quick on-the-go checks?", "Yes, fast tabs, instant FAQ search, and clean mobile cards make quick checks effortless."],
+    ["What if I only want to read safety or terms before proceeding?", "Open the menu anytime and tap Terms or Safety to read them clearly."],
+    ["How are basic counts used without storing personal records?", "Aggregated counts of PDFs generated and app actions help measure feature usefulness without keeping personal customer or technician profiles."],
+    ["Why does Narela 110040 appear in service details?", "To clearly specify the local Delhi service zone and pin code for accurate local discovery."],
+    ["Can someone new understand the app easily?", "Yes, every section uses plain, direct language with clear labels and straightforward controls."],
+    ["How do I check contact details anytime?", "Open the menu and tap Contact to see the phone number, service areas, and email."],
+    ["What makes Power Plum a practical daily tool?", "Simple BOQ building, instant PDF output, built-in safety reminders, and 50 searchable FAQs in one place."],
+    ["Can I filter 50 FAQs while typing?", "Yes, the FAQ list filters in real time as you type your search word."],
+    ["What if I clear the FAQ search box?", "All 50 questions appear again so you can browse freely."],
+    ["How does structured info help AI search tools?", "Clear questions, direct answers, and structured metadata help AI tools give accurate answers about Power Plum's features."],
+    ["How do I start using Power Plum today?", "Open the app, select your items/quantities/rates for your BOQ, generate your PDF, or open the menu to explore details."]
   ];
 
   function esc(v) {
@@ -2637,7 +2643,7 @@
     if (!d.querySelector('meta[name="description"]')) {
       var m = d.createElement("meta");
       m.name = "description";
-      m.content = BRAND.name + " - " + BRAND.tagline + ". Call " + BRAND.displayPhone + ".";
+      m.content = APP_INFO.name + " - " + APP_INFO.tagline + ". Serving " + APP_INFO.area + ". Contact: " + APP_INFO.displayPhone + ".";
       d.head.appendChild(m);
     }
     if (!d.getElementById("pp-auto-schema")) {
@@ -2648,10 +2654,11 @@
         "@context": "https://schema.org",
         "@graph": [
           {
-            "@type": "Plumber",
-            "name": BRAND.name,
-            "description": BRAND.tagline,
-            "telephone": BRAND.phone,
+            "@type": "WebApplication",
+            "name": APP_INFO.name,
+            "description": APP_INFO.tagline,
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web, Mobile Browser",
             "areaServed": ["Narela", "110040", "Bawana", "Kundli", "Alipur", "Delhi"]
           },
           {
@@ -2670,32 +2677,87 @@
     }
   }
 
+  function injectUiStyle() {
+    if (d.getElementById("ppNiceUiStyle")) return;
+    var st = d.createElement("style");
+    st.id = "ppNiceUiStyle";
+    st.textContent =
+      "#ppAutoBackdrop{position:fixed;inset:0;z-index:9990;background:rgba(15,23,42,.52);backdrop-filter:blur(2px);display:none;}" +
+      "#ppAutoPanel{position:fixed;top:0;left:0;bottom:0;z-index:9995;width:min(90vw,360px);background:#f8fafc;color:#0f172a;display:none;flex-direction:column;box-shadow:10px 0 32px rgba(15,23,42,.24);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}" +
+      ".pp-ui-head{background:linear-gradient(135deg,#171936,#272957);color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;}" +
+      ".pp-ui-close{border:none;background:#ef4444;color:#fff;border-radius:9px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;}" +
+      ".pp-ui-tabs{padding:10px 12px;display:flex;flex-wrap:wrap;gap:6px;background:#ffffff;border-bottom:1px solid #e2e8f0;}" +
+      ".pp-ui-tab{border:1px solid #cbd5e1;background:#f8fafc;color:#334155;border-radius:999px;padding:6px 11px;font-size:11.5px;font-weight:700;cursor:pointer;transition:all .15s ease;}" +
+      ".pp-ui-tab.active{background:#171936;color:#ffffff;border-color:#171936;}" +
+      ".pp-ui-body{padding:14px;overflow-y:auto;flex:1;}" +
+      ".pp-ui-card{background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;padding:14px;box-shadow:0 2px 8px rgba(15,23,42,.04);}" +
+      ".pp-ui-title{margin:0 0 8px;font-size:15px;font-weight:800;color:#0f172a;}" +
+      ".pp-ui-tag{display:inline-block;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:600;margin-bottom:10px;}" +
+      ".pp-ui-text{margin:0 0 10px;font-size:13px;line-height:1.55;color:#334155;}" +
+      ".pp-ui-search{width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:10px;font-size:12.5px;background:#fff;margin-bottom:8px;outline:none;}" +
+      ".pp-ui-search:focus{border-color:#171936;}" +
+      ".pp-faq-btn{width:100%;text-align:left;padding:10px 12px;margin-top:8px;border:1px solid #e2e8f0;border-radius:11px;background:#ffffff;color:#0f172a;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 1px 4px rgba(15,23,42,.03);}" +
+      ".pp-faq-ans{display:none;padding:9px 12px;margin-top:4px;border-left:3px solid #10b981;background:#f1f5f9;border-radius:0 8px 8px 0;font-size:12px;line-height:1.5;color:#334155;}";
+    d.head.appendChild(st);
+  }
+
   function renderView(tab) {
     if (tab === "about") {
-      return "<h4>About Us</h4><p><strong>Direct Answer:</strong> " + esc(BRAND.name) + " provides plumbing, BOQ estimation, pump, RO/geyser &amp; technical services across " + esc(BRAND.area) + ".</p><p><em>" + esc(BRAND.tagline) + "</em></p>";
+      return (
+        "<div class='pp-ui-card'>" +
+          "<h4 class='pp-ui-title'>About Power Plum</h4>" +
+          "<div class='pp-ui-tag'>" + esc(APP_INFO.tagline) + "</div>" +
+          "<p class='pp-ui-text'><strong>What It Does:</strong> Power Plum helps you build clear BOQ material estimates, calculate quantities and totals cleanly, generate ready-to-share PDFs, and access plumbing &amp; technical support across " + esc(APP_INFO.area) + ".</p>" +
+          "<p class='pp-ui-text' style='margin:0;'><strong>How It Helps You:</strong> Saves time during planning, keeps material lists accurate and organized, and gives you a neat estimate copy whenever you need one.</p>" +
+        "</div>"
+      );
     }
     if (tab === "privacy") {
-      return "<h4>Privacy Policy</h4><p><strong>Direct Answer:</strong> We store minimal technician data—only basic profile, trade, area, work/PDF counts, and service logs needed for operations.</p>";
+      return (
+        "<div class='pp-ui-card'>" +
+          "<h4 class='pp-ui-title'>Privacy Policy</h4>" +
+          "<p class='pp-ui-text'><strong>Simple &amp; Light Privacy:</strong> Power Plum does not store personal customer or technician records. Only high-level app activity and PDF generation counts are tracked to keep the app fast, reliable, and better over time.</p>" +
+        "</div>"
+      );
     }
     if (tab === "terms") {
-      return "<h4>Terms &amp; Conditions</h4><p><strong>Direct Answer:</strong> BOQ estimates are indicative until final site inspection, brand/size selection, and agreed scope.</p>";
+      return (
+        "<div class='pp-ui-card'>" +
+          "<h4 class='pp-ui-title'>Terms &amp; Conditions</h4>" +
+          "<p class='pp-ui-text' style='margin:0;'><strong>Estimate &amp; Usage Terms:</strong> BOQ lists and generated PDFs are helpful planning estimates based on entered details and remain subject to site verification, material availability, and agreed service scope.</p>" +
+        "</div>"
+      );
     }
     if (tab === "safety") {
-      return "<h4>Safety Features</h4><p><strong>Direct Answer:</strong> Turn off power and water supply before work, wear safety gear, check joints/pressure, and validate links safely.</p>";
+      return (
+        "<div class='pp-ui-card'>" +
+          "<h4 class='pp-ui-title'>Safety Features &amp; Tips</h4>" +
+          "<p class='pp-ui-text' style='margin:0;'><strong>Work &amp; App Safety:</strong> Always turn off water supply and electrical power before starting plumbing, pump, geyser, or RO work; wear protective gear; check fittings/pressure carefully; and rely on safe external link handling inside the app.</p>" +
+        "</div>"
+      );
     }
     if (tab === "contact") {
-      return "<h4>Contact Us</h4><p><strong>Direct Answer:</strong> Call or WhatsApp <strong>" + esc(BRAND.displayPhone) + "</strong> (" + esc(BRAND.email) + ") for service in " + esc(BRAND.area) + ".</p>";
+      return (
+        "<div class='pp-ui-card'>" +
+          "<h4 class='pp-ui-title'>Contact Us</h4>" +
+          "<p class='pp-ui-text'><strong>Get In Touch:</strong> Call or WhatsApp <strong>" + esc(APP_INFO.displayPhone) + "</strong> for BOQ &amp; service assistance across " + esc(APP_INFO.area) + ".</p>" +
+          "<p class='pp-ui-text' style='margin:0;font-size:12px;color:#475569;'>Email: " + esc(APP_INFO.email) + "</p>" +
+        "</div>"
+      );
     }
     return (
-      "<h4>FAQ (50 Questions)</h4>" +
-      "<input id='ppAutoFaqInput' type='text' placeholder='Search FAQ...' style='width:100%;padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px;font-size:12px;margin-bottom:6px;' />" +
+      "<div class='pp-ui-card' style='padding:12px;margin-bottom:8px;'>" +
+        "<h4 class='pp-ui-title' style='margin-bottom:4px;'>FAQ (50 Questions)</h4>" +
+        "<p class='pp-ui-text' style='margin:0 0 8px;font-size:12px;color:#64748b;'>Kisi bhi sawaal par tap karein aur jawab dekhein:</p>" +
+        "<input id='ppAutoFaqInput' class='pp-ui-search' type='text' placeholder='Search FAQ keyword...' />" +
+      "</div>" +
       FAQS.map(function (pair, idx) {
         return (
-          "<button type='button' data-af='" + idx + "' style='width:100%;text-align:left;padding:8px;margin-top:6px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;font-size:12px;font-weight:700;cursor:pointer;'>" +
-          (idx + 1) + ". " + esc(pair[0]) +
+          "<button type='button' class='pp-faq-btn' data-af='" + idx + "'>" +
+            (idx + 1) + ". " + esc(pair[0]) +
           "</button>" +
-          "<div id='pp-af-ans-" + idx + "' style='display:none;padding:7px 9px;border-left:3px solid #147a52;font-size:12px;color:#334155;'>" +
-          esc(pair[1]) +
+          "<div id='pp-af-ans-" + idx + "' class='pp-faq-ans'>" +
+            esc(pair[1]) +
           "</div>"
         );
       }).join("")
@@ -2704,29 +2766,31 @@
 
   function boot() {
     injectSchema();
+    injectUiStyle();
     if (d.getElementById("ppAutoPanel")) return;
 
     var backdrop = d.createElement("div");
     backdrop.id = "ppAutoBackdrop";
-    backdrop.style.cssText = "position:fixed;inset:0;z-index:9990;background:rgba(15,23,42,.55);display:none;";
 
     var panel = d.createElement("aside");
     panel.id = "ppAutoPanel";
-    panel.style.cssText = "position:fixed;top:0;left:0;bottom:0;z-index:9995;width:min(88vw,340px);background:#fff;color:#0f172a;display:none;flex-direction:column;box-shadow:8px 0 28px rgba(0,0,0,.22);";
     panel.innerHTML =
-      "<div style='background:#171936;color:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;'>" +
-        "<strong style='font-size:13px;'>Power Plum Info &amp; FAQ</strong>" +
-        "<button id='ppAutoCloseBtn' type='button' style='border:none;background:#ef4444;color:#fff;border-radius:7px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;'>Close</button>" +
+      "<div class='pp-ui-head'>" +
+        "<div>" +
+          "<div style='font-size:14px;font-weight:800;'>Power Plum Info &amp; FAQ</div>" +
+          "<div style='font-size:10.5px;opacity:.85;'>Narela • Bawana • Kundli • Alipur</div>" +
+        "</div>" +
+        "<button id='ppAutoCloseBtn' class='pp-ui-close' type='button'>Close</button>" +
       "</div>" +
-      "<div style='padding:8px 10px;display:flex;flex-wrap:wrap;gap:5px;border-bottom:1px solid #e2e8f0;'>" +
-        "<button type='button' data-atab='about' style='border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;'>About Us</button>" +
-        "<button type='button' data-atab='privacy' style='border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;'>Privacy</button>" +
-        "<button type='button' data-atab='terms' style='border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;'>Terms</button>" +
-        "<button type='button' data-atab='safety' style='border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;'>Safety</button>" +
-        "<button type='button' data-atab='contact' style='border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;'>Contact</button>" +
-        "<button type='button' data-atab='faq' style='border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;'>50 FAQs</button>" +
+      "<div class='pp-ui-tabs'>" +
+        "<button type='button' class='pp-ui-tab active' data-atab='about'>About Us</button>" +
+        "<button type='button' class='pp-ui-tab' data-atab='privacy'>Privacy</button>" +
+        "<button type='button' class='pp-ui-tab' data-atab='terms'>Terms</button>" +
+        "<button type='button' class='pp-ui-tab' data-atab='safety'>Safety</button>" +
+        "<button type='button' class='pp-ui-tab' data-atab='contact'>Contact</button>" +
+        "<button type='button' class='pp-ui-tab' data-atab='faq'>50 FAQs</button>" +
       "</div>" +
-      "<div id='ppAutoBody' style='padding:12px;overflow-y:auto;flex:1;font-size:12.5px;line-height:1.5;'></div>";
+      "<div id='ppAutoBody' class='pp-ui-body'></div>";
 
     d.body.appendChild(backdrop);
     d.body.appendChild(panel);
@@ -2739,6 +2803,9 @@
     }
 
     function showTab(tabName) {
+      panel.querySelectorAll("[data-atab]").forEach(function (t) {
+        t.classList.toggle("active", t.getAttribute("data-atab") === tabName);
+      });
       bodyEl.innerHTML = renderView(tabName);
       if (tabName === "faq") {
         bodyEl.querySelectorAll("[data-af]").forEach(function (btn) {
@@ -2762,7 +2829,6 @@
       }
     }
 
-    // Hook existing menu buttons/links automatically on click
     d.addEventListener("click", function (ev) {
       var target = ev.target && ev.target.closest ? ev.target.closest("button, a, [role='button']") : null;
       if (!target || panel.contains(target)) return;
@@ -2788,9 +2854,8 @@
       });
     });
 
-    // Auto-open once on load so it's immediately visible & active without needing any setup
     showTab("about");
-    setOpen(true);
+    setOpen(false);
   }
 
   if (d.readyState === "loading") {
@@ -2799,13 +2864,12 @@
     boot();
   }
 })(window, document);
-
-
-  
-        
-
-  
 </script>
+
+
+
+
+  
 
 
   
