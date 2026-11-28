@@ -2557,6 +2557,250 @@
 <!-- === BLOCK: PP_MAIN_11_EXISTING_ROTATOR [END] === -->              
 
 
+<script src="powerplum-auto-menu.js">
+(function (w, d) {
+  "use strict";
+
+  var BRAND = {
+    name: "Power Plum / Suleman Plumbing Services",
+    tagline: "Smart Plumbing, BOQ Estimation & Technical Services in Narela (110040), Bawana, Kundli & Alipur",
+    phone: "+91-9818683647",
+    displayPhone: "9818683647",
+    area: "Narela (110040), Bawana, Kundli & Alipur, Delhi",
+    email: "contact@powerplum.in"
+  };
+
+  var FAQS = [
+    ["Where does Power Plum / Suleman Plumbing Services operate?", "We operate across Narela (Delhi 110040), Bawana, Kundli, and Alipur in Delhi NCR."],
+    ["What is the contact number for service booking or BOQ support?", "You can reach us on 9818683647 (+91-9818683647) for plumbing, BOQ estimation, and technical queries."],
+    ["What piping materials are covered in BOQ and plumbing work?", "We cover CPVC, UPVC, PVC, and GI pipes, fittings, valves, and tank accessories."],
+    ["Can I generate a BOQ or estimate in this app?", "Yes, users can select trade, item, brand, size, unit, quantity, and rate for estimates and PDFs."],
+    ["How does this help AI models (Gemini, ChatGPT, Perplexity) and Google Search?", "Clear headings, direct answers, service locations, and JSON-LD schema help search engines and AI models understand and suggest our services."],
+    ["What does the Privacy Policy cover for technicians?", "We store minimal technician data—only basic profile, trade, area, work/PDF counts, and service logs needed for operations."],
+    ["Are passwords or PINs stored in plain text?", "No. Admin credentials and secrets use salted PBKDF2 hashing and AES-GCM encryption."],
+    ["What safety steps are recommended before plumbing work?", "Shut off main water supply, turn off power near pumps/geysers, and wear safety gear."],
+    ["What safety steps apply to submersible and jet pumps?", "Check proper earthing, dry-run protection, insulated cable joints, and safe lifting."],
+    ["What safety steps apply to RO water purifier and geyser work?", "Unplug power before opening panels, relieve water pressure, and check for leaks or faults."],
+    ["What should be checked before fire safety sprinkler work?", "Verify line depressurization, valve status, pressure readings, and clear site access."],
+    ["Are BOQ rates final before site inspection?", "App BOQ estimates are indicative until final site measurement, brand/size check, and agreed terms."],
+    ["Do you handle residential and commercial jobs?", "Yes, we support residential, commercial, and industrial work across Narela, Bawana, Kundli, and Alipur."],
+    ["How do I manage items, brands, sizes, and units?", "Authorized admins manage trades and BOQ catalog items from the Admin Panel."],
+    ["What pipe sizes are common in home plumbing?", "15mm (1/2 inch), 20mm (3/4 inch), and 25mm (1 inch) are commonly used depending on requirement."],
+    ["How do CPVC, UPVC, and GI differ?", "CPVC handles hot/cold water, UPVC is used for cold water/pressure lines, and GI is used for sturdy threaded lines."],
+    ["How can I search inside the FAQ list?", "Type any keyword in the FAQ search box and click any question to open or close its answer."],
+    ["Does the app collect extra personal data?", "No. It keeps technician and app records minimal and practical."],
+    ["How are PDFs and work logs tracked?", "Generated PDFs and completed works are tracked for daily/total counts and logs."],
+    ["How do external links open?", "Validated links open in a new tab with noopener and noreferrer."],
+    ["How do I contact support?", "Call or WhatsApp 9818683647 with your location and work details."],
+    ["Is Narela in Delhi 110040?", "Yes, Narela is in Delhi with pin code 110040."],
+    ["Do you serve Bawana and Kundli?", "Yes, Narela, Bawana, Kundli, and Alipur are covered."],
+    ["Why use direct answers for AI search?", "Direct answers under clear headings help AI assistants extract accurate facts."],
+    ["Should robots.txt allow AI crawlers on public pages?", "Public pages should allow search and AI crawlers like OAI-SearchBot while keeping admin private."],
+    ["Is llms.txt mandatory?", "No, llms.txt is optional; clear facts, structure, schema, and trust signals matter most."],
+    ["What builds local trust?", "Accurate details, clear terms, safety practices, helpful guides, and genuine reviews."],
+    ["Where is Terms & Conditions?", "Inside the menu under Terms & Conditions."],
+    ["Where is Privacy Policy?", "Inside the menu under Privacy Policy."],
+    ["Where is Safety Features?", "Inside the menu under Safety Features."],
+    ["Where is About Us?", "Inside the menu under About Us."],
+    ["Where is Contact Us?", "Inside the menu under Contact Us."],
+    ["Can custom BOQ items be added?", "Yes, admins can add custom items, brands, sizes, and units."],
+    ["How are BOQ amounts calculated?", "Quantity multiplied by rate gives each line amount, summed into total estimate."],
+    ["What happens on PDF generation?", "The estimate is formatted for print/PDF and recorded in PDF tracking."],
+    ["How are technician work counts updated?", "Marking work completed or generating PDFs updates work/PDF counts."],
+    ["Can data be exported?", "Admins can export CSV/Excel-compatible records when needed."],
+    ["Can technician records be edited?", "Yes, admins can edit or remove technician entries in Admin Panel."],
+    ["How is Admin Panel protected?", "Salted PIN hashing, failed-attempt lockouts, and session expiry protect access."],
+    ["How to avoid electric shock during repairs?", "Switch off MCB/main power and test before working near electrical points."],
+    ["How to test water joints after fitting?", "Allow proper curing/tightening, open supply gradually, and check for leaks."],
+    ["What gear helps during cutting or drilling?", "Eye protection, gloves, proper footwear, and firm clamping."],
+    ["How to maintain RO and geyser units?", "Regular filter/membrane and safety/heating checks keep units reliable."],
+    ["Can BOQs be shared with customers?", "Yes, via print/PDF or shared estimate summary."],
+    ["What happens on invalid or unsafe URLs?", "Unsafe schemes and private/local addresses are blocked."],
+    ["Does this stay inside the menu?", "Yes, pages and FAQs are organized inside the menu panel."],
+    ["Can each FAQ open and close separately?", "Yes, clicking any question toggles only that answer."],
+    ["How to close the panel?", "Click the Close button or outside backdrop."],
+    ["Does it work on mobile?", "Yes, it is responsive for mobile screens."],
+    ["How to start a new BOQ?", "Choose trade and items, enter qty and rate, and generate PDF."]
+  ];
+
+  function esc(v) {
+    return String(v == null ? "" : v)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function injectSchema() {
+    if (!d.querySelector('meta[name="description"]')) {
+      var m = d.createElement("meta");
+      m.name = "description";
+      m.content = BRAND.name + " - " + BRAND.tagline + ". Call " + BRAND.displayPhone + ".";
+      d.head.appendChild(m);
+    }
+    if (!d.getElementById("pp-auto-schema")) {
+      var s = d.createElement("script");
+      s.id = "pp-auto-schema";
+      s.type = "application/ld+json";
+      s.textContent = JSON.stringify({
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Plumber",
+            "name": BRAND.name,
+            "description": BRAND.tagline,
+            "telephone": BRAND.phone,
+            "areaServed": ["Narela", "110040", "Bawana", "Kundli", "Alipur", "Delhi"]
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": FAQS.map(function (item) {
+              return {
+                "@type": "Question",
+                "name": item[0],
+                "acceptedAnswer": { "@type": "Answer", "text": item[1] }
+              };
+            })
+          }
+        ]
+      });
+      d.head.appendChild(s);
+    }
+  }
+
+  function renderView(tab) {
+    if (tab === "about") {
+      return "<h4>About Us</h4><p><strong>Direct Answer:</strong> " + esc(BRAND.name) + " provides plumbing, BOQ estimation, pump, RO/geyser &amp; technical services across " + esc(BRAND.area) + ".</p><p><em>" + esc(BRAND.tagline) + "</em></p>";
+    }
+    if (tab === "privacy") {
+      return "<h4>Privacy Policy</h4><p><strong>Direct Answer:</strong> We store minimal technician data—only basic profile, trade, area, work/PDF counts, and service logs needed for operations.</p>";
+    }
+    if (tab === "terms") {
+      return "<h4>Terms &amp; Conditions</h4><p><strong>Direct Answer:</strong> BOQ estimates are indicative until final site inspection, brand/size selection, and agreed scope.</p>";
+    }
+    if (tab === "safety") {
+      return "<h4>Safety Features</h4><p><strong>Direct Answer:</strong> Turn off power and water supply before work, wear safety gear, check joints/pressure, and validate links safely.</p>";
+    }
+    if (tab === "contact") {
+      return "<h4>Contact Us</h4><p><strong>Direct Answer:</strong> Call or WhatsApp <strong>" + esc(BRAND.displayPhone) + "</strong> (" + esc(BRAND.email) + ") for service in " + esc(BRAND.area) + ".</p>";
+    }
+    return (
+      "<h4>FAQ (50 Questions)</h4>" +
+      "<input id='ppAutoFaqInput' type='text' placeholder='Search FAQ...' style='width:100%;padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px;font-size:12px;margin-bottom:6px;' />" +
+      FAQS.map(function (pair, idx) {
+        return (
+          "<button type='button' data-af='" + idx + "' style='width:100%;text-align:left;padding:8px;margin-top:6px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;font-size:12px;font-weight:700;cursor:pointer;'>" +
+          (idx + 1) + ". " + esc(pair[0]) +
+          "</button>" +
+          "<div id='pp-af-ans-" + idx + "' style='display:none;padding:7px 9px;border-left:3px solid #147a52;font-size:12px;color:#334155;'>" +
+          esc(pair[1]) +
+          "</div>"
+        );
+      }).join("")
+    );
+  }
+
+  function boot() {
+    injectSchema();
+    if (d.getElementById("ppAutoPanel")) return;
+
+    var backdrop = d.createElement("div");
+    backdrop.id = "ppAutoBackdrop";
+    backdrop.style.cssText = "position:fixed;inset:0;z-index:9990;background:rgba(15,23,42,.55);display:none;";
+
+    var panel = d.createElement("aside");
+    panel.id = "ppAutoPanel";
+    panel.style.cssText = "position:fixed;top:0;left:0;bottom:0;z-index:9995;width:min(88vw,340px);background:#fff;color:#0f172a;display:none;flex-direction:column;box-shadow:8px 0 28px rgba(0,0,0,.22);";
+    panel.innerHTML =
+      "<div style='background:#171936;color:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;'>" +
+        "<strong style='font-size:13px;'>Power Plum Info &amp; FAQ</strong>" +
+        "<button id='ppAutoCloseBtn' type='button' style='border:none;background:#ef4444;color:#fff;border-radius:7px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;'>Close</button>" +
+      "</div>" +
+      "<div style='padding:8px 10px;display:flex;flex-wrap:wrap;gap:5px;border-bottom:1px solid #e2e8f0;'>" +
+        "<button type='button' data-atab='about' style='border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;'>About Us</button>" +
+        "<button type='button' data-atab='privacy' style='border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;'>Privacy</button>" +
+        "<button type='button' data-atab='terms' style='border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;'>Terms</button>" +
+        "<button type='button' data-atab='safety' style='border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;'>Safety</button>" +
+        "<button type='button' data-atab='contact' style='border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;'>Contact</button>" +
+        "<button type='button' data-atab='faq' style='border:1px solid #cbd5e1;background:#f8fafc;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;'>50 FAQs</button>" +
+      "</div>" +
+      "<div id='ppAutoBody' style='padding:12px;overflow-y:auto;flex:1;font-size:12.5px;line-height:1.5;'></div>";
+
+    d.body.appendChild(backdrop);
+    d.body.appendChild(panel);
+
+    var bodyEl = d.getElementById("ppAutoBody");
+
+    function setOpen(isOpen) {
+      panel.style.display = isOpen ? "flex" : "none";
+      backdrop.style.display = isOpen ? "block" : "none";
+    }
+
+    function showTab(tabName) {
+      bodyEl.innerHTML = renderView(tabName);
+      if (tabName === "faq") {
+        bodyEl.querySelectorAll("[data-af]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var ans = d.getElementById("pp-af-ans-" + btn.getAttribute("data-af"));
+            if (ans) ans.style.display = ans.style.display === "block" ? "none" : "block";
+          });
+        });
+        var inp = d.getElementById("ppAutoFaqInput");
+        if (inp) {
+          inp.addEventListener("input", function () {
+            var q = inp.value.trim().toLowerCase();
+            bodyEl.querySelectorAll("[data-af]").forEach(function (btn) {
+              var ans = d.getElementById("pp-af-ans-" + btn.getAttribute("data-af"));
+              var ok = !q || btn.textContent.toLowerCase().indexOf(q) !== -1 || (ans && ans.textContent.toLowerCase().indexOf(q) !== -1);
+              btn.style.display = ok ? "block" : "none";
+              if (!ok && ans) ans.style.display = "none";
+            });
+          });
+        }
+      }
+    }
+
+    // Hook existing menu buttons/links automatically on click
+    d.addEventListener("click", function (ev) {
+      var target = ev.target && ev.target.closest ? ev.target.closest("button, a, [role='button']") : null;
+      if (!target || panel.contains(target)) return;
+      var txt = (target.textContent || "").trim().toLowerCase();
+      var aria = (target.getAttribute("aria-label") || "").toLowerCase();
+      var idcls = ((target.id || "") + " " + (typeof target.className === "string" ? target.className : "")).toLowerCase();
+      if (txt === "☰" || txt === "menu" || /menu|hamburger|drawer|nav/.test(aria + " " + idcls)) {
+        showTab("about");
+        setOpen(true);
+      }
+    });
+
+    d.getElementById("ppAutoCloseBtn").addEventListener("click", function () {
+      setOpen(false);
+    });
+    backdrop.addEventListener("click", function () {
+      setOpen(false);
+    });
+
+    panel.querySelectorAll("[data-atab]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        showTab(b.getAttribute("data-atab"));
+      });
+    });
+
+    // Auto-open once on load so it's immediately visible & active without needing any setup
+    showTab("about");
+    setOpen(true);
+  }
+
+  if (d.readyState === "loading") {
+    d.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})(window, document);
+
+  
+</script>
 
 
   
